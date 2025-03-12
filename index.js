@@ -3,7 +3,9 @@ const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser')
 const cors = require("cors");
 const connectDB = require('./Config/ConnectDB');
-require('dotenv').config()
+// require('dotenv').config()
+
+require('dotenv').config({ path: '.env.production' });
 
 const adminRoutes = require('./Routes/adminRoutes')
 const accountantRoutes = require('./Routes/accountantRoutes');
