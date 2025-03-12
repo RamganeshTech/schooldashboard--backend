@@ -378,7 +378,7 @@ const getStudentsList = async (req, res) => {
         let data = await StudentModel.find({})
 
         if (!data.length) {
-            throw new Error("No Students available...")
+         return res.status(200).json({ message: "no students Available", data, ok: true })
         }
         
         res.status(200).json({ message: "fetched student data succesfully", data, ok: true })

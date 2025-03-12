@@ -102,7 +102,7 @@ const accountantRefreshAccessToken = async (req, res) => {
 const accountantLogout = async (req, res) => {
     try {
         // const AccountantaccessToken = req.headers.authorization?.split(" ")[1]; // Assuming Bearer token
-       
+
         // Clear the refresh token from the cookie
         res.clearCookie("accountantrefreshToken", {
             httpOnly: true,
@@ -259,8 +259,9 @@ const getStudentsList = async (req, res) => {
         let data = await studentModel.find({})
 
         if (!data.length) {
-            throw new Error("No Students available...")
+            return res.status(200).json({ message: "no students Available", data, ok: true })
         }
+
 
         res.status(200).json({ message: "fetched student data succesfully", data, ok: true })
     }
