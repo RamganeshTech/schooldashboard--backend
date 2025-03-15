@@ -6,6 +6,10 @@ const StudentSchema = mongoose.Schema({
         maxLength: [3, "New or Old column should contain only new or old"],
         required: true,
     },
+    studentClass:{
+        type: String,
+        required: true,
+    },
     section: {
         type: String,
         minLength: [1, "Section should be provided"],

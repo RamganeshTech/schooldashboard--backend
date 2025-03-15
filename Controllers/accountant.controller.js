@@ -166,6 +166,7 @@ const addStudent = async (req, res) => {
     try {
         let {
             newOld,
+            studentClass,
             section,
             studentName,
             adminssionAmt,
@@ -217,6 +218,7 @@ const addStudent = async (req, res) => {
 
         let data = await studentModel.create({
             newOld,
+            studentClass,
             studentName,
             section,
             adminssionAmt,
