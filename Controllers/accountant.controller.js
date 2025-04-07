@@ -373,7 +373,6 @@ const changesRetrived = async (req, res) => {
     try {
         let { date } = req.params
 
-        console.log(date)
         let data = await changesmadeModel.find({ modifiedDate: date })
         res.status(200).json({ message: "retrived successfully", data, ok: true })
 
