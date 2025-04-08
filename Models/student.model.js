@@ -6,7 +6,7 @@ const StudentSchema = mongoose.Schema({
         maxLength: [3, "New or Old column should contain only new or old"],
         required: true,
     },
-    studentClass:{
+    studentClass: {
         type: String,
         required: true,
     },
@@ -125,10 +125,39 @@ const StudentSchema = mongoose.Schema({
     whatsappNumber: {
         type: String,
         default: null,
-        match: [/^[0-9]+$/, "WhatsApp number should contain only numbers"] 
+        match: [/^[0-9]+$/, "WhatsApp number should contain only numbers"]
     },
+    mandatory: {
+        gender: { type: String, default:null},
+        dob: { type: String, default:null },
+        educationNumber: { type: String, default:null },
+        motherName: { type: String, default:null },
+        fatherName: { type: String, default:null },
+        guardianName: { type: String, default:null },
+        aadhaarNumber: { type: String, default:null },
+        aadhaarName: { type: String, default:null },
+        address: { type: String, default:null },
+        pincode: { type: String, default:null },
+        mobileNumber: { type: String, default:null },
+        alternateMobile: { type: String, default:null },
+        email: { type: String, default:null },
+        motherTongue: { type: String, default:null },
+        socialCategory: { type: String, default:null },
+        minorityGroup: { type: String, default:null },
+        bpl: { type: String, default:null },
+        aay: { type: String, default:null },
+        ews: { type: String, default:null },
+        cwsn: { type: String, default:null },
+        impairments: { type: String, default:null },
+        indian: { type: String, default:null },
+        outOfSchool: { type: String, default:null },
+        mainstreamedDate: { type: String, default:null },
+        disabilityCert: { type: String, default:null },
+        disabilityPercent: { type: String, default:null },
+        bloodGroup: { type: String, default:null },
+    }
 }, {
-    timestamps:true,
+    timestamps: true,
     minimize: true
 });
 

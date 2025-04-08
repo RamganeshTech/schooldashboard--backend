@@ -2,7 +2,7 @@ const express = require('express')
 
 const router = express.Router()
 
-const {accountantLogin, accountantLogout, accountantRefreshAccessToken, isAuthenticatedUser, getAccountantRole, addStudent, getStudentsList, updateStudentWithPermission, updateStudentDirectly, getPermissionStatus, changesMadeOnDate, changesRetrived} = require('../Controllers/accountant.controller')
+const {accountantLogin, accountantLogout, accountantRefreshAccessToken, isAuthenticatedUser, getAccountantRole, addStudent, getStudentsList, updateStudentWithPermission, updateStudentDirectly, getPermissionStatus, changesMadeOnDate, changesRetrived, editStudentProfile} = require('../Controllers/accountant.controller')
 const { verifyAccountantMiddleware } = require('../Middleware/verifyTokenMiddleware')
 
 router.post('/accountantlogin', accountantLogin)
@@ -23,6 +23,7 @@ router.get("/getPermissionStatus", verifyAccountantMiddleware,getPermissionStatu
 
 router.post('/changesmodified',verifyAccountantMiddleware, changesMadeOnDate)
 router.get('/changesRetrived/:date',verifyAccountantMiddleware, changesRetrived)
+router.patch('/updateStudentProfile/:studentId',verifyAccountantMiddleware, editStudentProfile)
 
 
 // router.get("/getRole", verifyAccountantMiddleware,getAccountantRole);

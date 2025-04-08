@@ -245,7 +245,8 @@ const addStudent = async (req, res) => {
             busSecondTermPaidAmt,
             busSecondTermDues,
             busPoint,
-            whatsappNumber
+            whatsappNumber,
+           
         })
 
         res.status(201).json({ message: "student data succesfully created", data, ok: true })
@@ -383,6 +384,32 @@ const changesRetrived = async (req, res) => {
     }
 }
 
+const editStudentProfile = async (req, res)=>{
+    try {
+        let { studentId } = req.params
+        let {profileData} = req.body;
+
+        let isExists = await studentModel.findById(studentId)
+
+        if (!isExists) {
+            return res.status(404).json({ message: "Student not found", ok:false });
+        }
+
+       Object.entries(profileData).forEach(([key, value])=>{
+        isExists.mandatory[key]=value
+       })
+
+        await isExists.save()
+
+        res.status(200).json({ message: "updated student profile data successfully", data:isExists, ok: true })
+
+    }
+    catch (err) {
+        console.log("error from editStudentProfile", err.messaage)
+        res.status(400).json({ message: err.message, error: "no updateion made in student profile", ok: false });
+    }
+}
+
 module.exports = {
     accountantLogin,
     accountantRefreshAccessToken,
@@ -395,5 +422,6 @@ module.exports = {
     updateStudentDirectly,
     getPermissionStatus,
     changesMadeOnDate,
-    changesRetrived
+    changesRetrived,
+    editStudentProfile,
 }

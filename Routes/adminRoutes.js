@@ -3,6 +3,7 @@ const express = require('express')
 const {adminLogin, refreshAccessToken, adminLogout, updateValue, createAccountantCredential, getDeletedAccountantCredentials, deleteAccountantCredential, isAuthenticatedUser, getAdminRole, getNotifications, acceptNotification, rejectNotification, updateStudentAdmin, getStudentsList, getActiveAccountant, updatePermissionAccountant, changesMadeOnDate, changesRetrived} = require('../Controllers/admin.controller');
 
 const { verifyTokenMiddleware } = require('../Middleware/verifyTokenMiddleware');
+const { editStudentProfile } = require('../Controllers/accountant.controller');
 
 const router = express.Router()
 
@@ -30,6 +31,7 @@ router.patch('/updatePermission/:id',verifyTokenMiddleware, updatePermissionAcco
 
 router.post('/changesmodified',verifyTokenMiddleware, changesMadeOnDate)
 router.get('/changesRetrived/:date',verifyTokenMiddleware, changesRetrived)
+router.patch('/updateStudentProfile/:studentId',verifyTokenMiddleware, editStudentProfile)
 
 
 
