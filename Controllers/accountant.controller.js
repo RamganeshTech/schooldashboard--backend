@@ -384,7 +384,7 @@ const changesRetrived = async (req, res) => {
     }
 }
 
-const editStudentProfile = async (req, res)=>{
+const editStudentMandatoryDetails = async (req, res)=>{
     try {
         let { studentId } = req.params
         let {profileData} = req.body;
@@ -410,6 +410,34 @@ const editStudentProfile = async (req, res)=>{
     }
 }
 
+const editStudentNonMandatoryDetails = async (req, res)=>{
+    try {
+        let { studentId } = req.params
+        let {nonMandatory} = req.body;
+
+        console.log("profile data", nonMandatory)
+
+        let isExists = await studentModel.findById(studentId)
+
+        if (!isExists) {
+            return res.status(404).json({ message: "Student not found", ok:false });
+        }
+
+       Object.entries(nonMandatory).forEach(([key, value])=>{
+        isExists.nonMandatory[key]=value
+       })
+
+        await isExists.save()
+
+        res.status(200).json({ message: "updated student non mandatory profile data successfully", data:isExists, ok: true })
+
+    }
+    catch (err) {
+        console.log("error from editStudentProfile", err.messaage)
+        res.status(400).json({ message: err.message, error: "no updateion made in student profile", ok: false });
+    }
+}
+
 module.exports = {
     accountantLogin,
     accountantRefreshAccessToken,
@@ -423,5 +451,6 @@ module.exports = {
     getPermissionStatus,
     changesMadeOnDate,
     changesRetrived,
-    editStudentProfile,
+    editStudentMandatoryDetails,
+    editStudentNonMandatoryDetails
 }
