@@ -525,6 +525,34 @@ const generateExcelFile = async (req, res) => {
     }
 }
 
+
+const searchStudent = async (req, res) => {
+  try {
+    const { query } = req.query;
+
+    let searchResult;
+
+    const isNumeric = /^[0-9]+$/.test(query);
+
+    if (isNumeric) {
+      // Search by SR ID (exact match or partial match)
+      searchResult = await studentModel.find({
+        srId: { $regex: query, $options: 'i' },isTcIssued:false
+      });
+    } else {
+      // Search by student name (case-insensitive)
+      searchResult = await studentModel.find({
+        studentName: { $regex: query, $options: 'i' }, isTcIssued:false
+      });
+    }
+
+    res.status(200).json({data:searchResult, ok:false});
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+}
+
 module.exports = {
     accountantLogin,
     accountantRefreshAccessToken,
@@ -542,5 +570,6 @@ module.exports = {
     editStudentNonMandatoryDetails,
 
     getTakenSRNo,
-    generateExcelFile
+    generateExcelFile,
+    searchStudent
 }

@@ -2,7 +2,11 @@ const express = require('express')
 
 const router = express.Router()
 
-const {accountantLogin, accountantLogout, accountantRefreshAccessToken, getTakenSRNo, isAuthenticatedUser, getAccountantRole, addStudent, getStudentsList, updateStudentWithPermission, updateStudentDirectly, getPermissionStatus, changesMadeOnDate, changesRetrived, editStudentProfile, editStudentMandatoryDetails, editStudentNonMandatoryDetails, generateExcelFile} = require('../Controllers/accountant.controller')
+const {accountantLogin, accountantLogout, accountantRefreshAccessToken, getTakenSRNo, isAuthenticatedUser,
+     getAccountantRole, addStudent, getStudentsList, updateStudentWithPermission, updateStudentDirectly, 
+     getPermissionStatus, changesMadeOnDate, changesRetrived, editStudentMandatoryDetails, 
+     editStudentNonMandatoryDetails, generateExcelFile, searchStudent} = require('../Controllers/accountant.controller')
+
 const { verifyAccountantMiddleware } = require('../Middleware/verifyTokenMiddleware')
 
 router.post('/accountantlogin', accountantLogin)
@@ -28,6 +32,6 @@ router.patch('/updateStudentProfileNonMandatory/:studentId',verifyAccountantMidd
 
 router.get('/students/taken-sr-ids', verifyAccountantMiddleware, getTakenSRNo)
 router.get('/excelfile', verifyAccountantMiddleware, generateExcelFile)
-
+router.get('/searchstudent', searchStudent)
 
 module.exports = router

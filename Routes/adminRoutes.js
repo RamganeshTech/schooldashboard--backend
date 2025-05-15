@@ -5,7 +5,8 @@ const {adminLogin, refreshAccessToken, adminLogout, updateValue, createAccountan
     getAdminRole, getNotifications, acceptNotification, rejectNotification, updateStudentAdmin, 
     getStudentsList, getActiveAccountant, updatePermissionAccountant, changesMadeOnDate, 
     changesRetrived, editStudentMandatoryDetails, editStudentNonMandatoryDetails, getTakenSRNo,
-    generateTC, generateExcelFile} = require('../Controllers/admin.controller');
+    generateTC, generateExcelFile,
+    searchStudent} = require('../Controllers/admin.controller');
 
 const { verifyTokenMiddleware } = require('../Middleware/verifyTokenMiddleware');
 const { editStudentProfile } = require('../Controllers/accountant.controller');
@@ -42,5 +43,6 @@ router.patch('/updateStudentProfileNonMandatory/:studentId',verifyTokenMiddlewar
 router.get('/students/taken-sr-ids', verifyTokenMiddleware, getTakenSRNo)
 router.patch('/generatetc/:srId', verifyTokenMiddleware, generateTC)
 router.get('/excelfile', verifyTokenMiddleware, generateExcelFile)
+router.get('/searchstudent', searchStudent)
 
 module.exports = router
