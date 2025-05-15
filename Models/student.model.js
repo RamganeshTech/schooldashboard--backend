@@ -1,6 +1,12 @@
 const mongoose = require('mongoose')
 
 const StudentSchema = mongoose.Schema({
+    srId: {
+        type: String, // Example: "SR-104"
+        required: true,
+        unique: true,
+        maxLength:[15, "SR-ID should contain only upto 15 digits"]
+    },
     newOld: {
         type: String,
         maxLength: [3, "New or Old column should contain only new or old"],
@@ -127,6 +133,10 @@ const StudentSchema = mongoose.Schema({
         default: null,
         match: [/^[0-9]+$/, "WhatsApp number should contain only numbers"]
     },
+    isTcIssued:{
+        type:Boolean,
+        default:false,
+    },
     mandatory: {
         gender: { type: String, default: null },
         dob: { type: String, default: null },
@@ -157,36 +167,36 @@ const StudentSchema = mongoose.Schema({
         bloodGroup: { type: String, default: null },
     },
     nonMandatory: {
-        facilitiesProvided:  { type: String, default: null },
-        facilitiesForCWSN:  { type: String, default: null },
-        screenedForSLD:  { type: String, default: null },
-        sldType:  { type: String, default: null },
-        screenedForASD:  { type: String, default: null },
-        screenedForADHD:  { type: String, default: null },
-        isGiftedOrTalented:  { type: String, default: null },
-        participatedInCompetitions:  { type: String, default: null },
-        participatedInActivities:  { type: String, default: null },
-        canHandleDigitalDevices:  { type: String, default: null },
-        heightInCm:  { type: String, default: null }, // or number if preferred
-        weightInKg:  { type: String, default: null }, // or number
-        distanceToSchool:  { type: String, default: null },
-        parentEducationLevel:  { type: String, default: null },
+        facilitiesProvided: { type: String, default: null },
+        facilitiesForCWSN: { type: String, default: null },
+        screenedForSLD: { type: String, default: null },
+        sldType: { type: String, default: null },
+        screenedForASD: { type: String, default: null },
+        screenedForADHD: { type: String, default: null },
+        isGiftedOrTalented: { type: String, default: null },
+        participatedInCompetitions: { type: String, default: null },
+        participatedInActivities: { type: String, default: null },
+        canHandleDigitalDevices: { type: String, default: null },
+        heightInCm: { type: String, default: null }, // or number if preferred
+        weightInKg: { type: String, default: null }, // or number
+        distanceToSchool: { type: String, default: null },
+        parentEducationLevel: { type: String, default: null },
 
         // ENTROLLMENT DETAILS 
 
-        admissionNumber:{ type: String, default: null },
-        admissionDate:{ type: String, default: null }, // Format: DD/MM/YYYY
-        rollNumber:{ type: String, default: null },
-        mediumOfInstruction:{ type: String, default: null },
-        languagesStudied:{ type: String, default: null },
-        academicStream:{ type: String, default: null },
-        subjectsStudied:{ type: String, default: null },
-        statusInPreviousYear:{ type: String, default: null },
-        gradeStudiedLastYear:{ type: String, default: null },
-        enrolledUnder:{ type: String, default: null },
-        previousResult:{ type: String, default: null },
-        marksObtainedPercentage:{ type: String, default: null },
-        daysAttendedLastYear:{ type: String, default: null },
+        admissionNumber: { type: String, default: null },
+        admissionDate: { type: String, default: null }, // Format: DD/MM/YYYY
+        rollNumber: { type: String, default: null },
+        mediumOfInstruction: { type: String, default: null },
+        languagesStudied: { type: String, default: null },
+        academicStream: { type: String, default: null },
+        subjectsStudied: { type: String, default: null },
+        statusInPreviousYear: { type: String, default: null },
+        gradeStudiedLastYear: { type: String, default: null },
+        enrolledUnder: { type: String, default: null },
+        previousResult: { type: String, default: null },
+        marksObtainedPercentage: { type: String, default: null },
+        daysAttendedLastYear: { type: String, default: null },
     }
 }, {
     timestamps: true,

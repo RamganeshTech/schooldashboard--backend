@@ -2,7 +2,7 @@ const express = require('express')
 
 const router = express.Router()
 
-const {accountantLogin, accountantLogout, accountantRefreshAccessToken, isAuthenticatedUser, getAccountantRole, addStudent, getStudentsList, updateStudentWithPermission, updateStudentDirectly, getPermissionStatus, changesMadeOnDate, changesRetrived, editStudentProfile, editStudentMandatoryDetails, editStudentNonMandatoryDetails} = require('../Controllers/accountant.controller')
+const {accountantLogin, accountantLogout, accountantRefreshAccessToken, getTakenSRNo, isAuthenticatedUser, getAccountantRole, addStudent, getStudentsList, updateStudentWithPermission, updateStudentDirectly, getPermissionStatus, changesMadeOnDate, changesRetrived, editStudentProfile, editStudentMandatoryDetails, editStudentNonMandatoryDetails, generateExcelFile} = require('../Controllers/accountant.controller')
 const { verifyAccountantMiddleware } = require('../Middleware/verifyTokenMiddleware')
 
 router.post('/accountantlogin', accountantLogin)
@@ -26,9 +26,8 @@ router.get('/changesRetrived/:date',verifyAccountantMiddleware, changesRetrived)
 router.patch('/updateStudentProfile/:studentId',verifyAccountantMiddleware, editStudentMandatoryDetails)
 router.patch('/updateStudentProfileNonMandatory/:studentId',verifyAccountantMiddleware, editStudentNonMandatoryDetails)
 
-
-// router.get("/getRole", verifyAccountantMiddleware,getAccountantRole);
-
+router.get('/students/taken-sr-ids', verifyAccountantMiddleware, getTakenSRNo)
+router.get('/excelfile', verifyAccountantMiddleware, generateExcelFile)
 
 
 module.exports = router

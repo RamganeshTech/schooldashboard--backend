@@ -4,7 +4,8 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
 
 const StudentModel = require('../Models/student.model')
-
+const ExcelJS = require('exceljs');
+const studentFeeColumns = require('../Constants/constants')
 
 const { generateTokens } = require("../Utils/tokenUtils");
 
@@ -28,9 +29,9 @@ const adminLogin = async (req, res) => {
         }
 
         if (isaccessTokenExist) {
-            
+
             return res.status(403).json({ message: "Admin already logged in", ok: false });
-        
+
         }
 
         validateAdmin(req);
@@ -45,14 +46,14 @@ const adminLogin = async (req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-            maxAge: parseExpiry(ACCESS_TOKEN_EXPIRY) * 1000 
+            maxAge: parseExpiry(ACCESS_TOKEN_EXPIRY) * 1000
         });
 
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production", 
+            secure: process.env.NODE_ENV === "production",
             sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-            maxAge: parseExpiry(REFRESH_TOKEN_EXPIRY) * 1000, 
+            maxAge: parseExpiry(REFRESH_TOKEN_EXPIRY) * 1000,
         });
 
         res.status(200).json({ accessToken, message: "Login successful", ok: true });
@@ -75,7 +76,7 @@ const refreshAccessToken = async (req, res) => {
 
         const { accessToken } = await generateTokens(payload.role); // Generate a new access token
 
-      
+
         const ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY; // 15 minutes
 
         res.cookie("accessToken", accessToken, {
@@ -95,13 +96,13 @@ const refreshAccessToken = async (req, res) => {
 const adminLogout = async (req, res) => {
     try {
         const accessToken = req.headers.authorization?.split(" ")[1]; // Assuming Bearer token
-      
+
 
         res.clearCookie("refreshToken", {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production", 
+            secure: process.env.NODE_ENV === "production",
             sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-            path: "/", 
+            path: "/",
         });
 
         res.clearCookie("accessToken", {
@@ -113,29 +114,29 @@ const adminLogout = async (req, res) => {
 
         res.json({ message: "Logout successful", ok: true });
     } catch (err) {
-        console.error("error from adminLogout api",err.message);
+        console.error("error from adminLogout api", err.message);
         res.status(400).json({ message: err.message, error: "logout failed", ok: false });
     }
 }
 
 const isAuthenticatedUser = async (req, res) => {
     try {
-        const accessToken = req.cookies?.accessToken; 
+        const accessToken = req.cookies?.accessToken;
 
         if (!accessToken) {
             return res.status(401).json({ authenticated: false, error: "authentication failed", ok: false });
         }
-     
+
         jwt.verify(accessToken, process.env.JWT_SECRET, (err, decoded) => {
             if (err) {
                 console.log(err)
                 return res.status(401).json({ authenticated: false, ok: false });
             }
-            return res.status(200).json({ authenticated: true, role: decoded.role, ok:true }); // Send user role if authenticated
+            return res.status(200).json({ authenticated: true, role: decoded.role, ok: true }); // Send user role if authenticated
         });
     }
     catch (err) {
-        console.error("error from isAuthrviated user Api",err.message);
+        console.error("error from isAuthrviated user Api", err.message);
         res.status(401).json({ message: err.message, error: "not authenticated", ok: false });
     }
 }
@@ -178,7 +179,7 @@ const createAccountantCredential = async (req, res) => {
 
     }
     catch (err) {
-        console.log("error from createAccountantCredential api",err.message)
+        console.log("error from createAccountantCredential api", err.message)
         res.status(400).json({ message: err.message, error: "error occured", ok: false })
 
     }
@@ -191,7 +192,7 @@ const getDeletedAccountantCredentials = async (req, res) => {
         res.status(201).json({ message: "Credentials retrived Successfully", data, ok: true })
     }
     catch (err) {
-        console.log("error from getDeletedAccountantCredentials api",err.message)
+        console.log("error from getDeletedAccountantCredentials api", err.message)
         res.status(400).json({ message: err.message, error: "error occured", ok: false })
     }
 }
@@ -228,7 +229,7 @@ const getNotifications = async (req, res) => {
         let data = await adminNotificationModel.find()
 
         if (!data.length) {
-          return  res.status(200).json({ message: "No notificatios received yet...", data, ok: true })
+            return res.status(200).json({ message: "No notificatios received yet...", data, ok: true })
         }
 
         res.status(200).json({ message: "Fetched Notification successfully", data, ok: true })
@@ -262,25 +263,25 @@ const acceptNotification = async (req, res) => {
 
         if (data.fields.adminssionPaidAmt !== undefined && isExistsStudent.adminssionPaidAmt !== data.fields.adminssionPaidAmt) {
             if (data.fields.adminssionPaidAmt !== 0) {
-                data.fields.admissionBillNo = await generateUniqueBillNo(5); 
+                data.fields.admissionBillNo = await generateUniqueBillNo(5);
             } else {
-                 data.fields.admissionBillNo = null; 
+                data.fields.admissionBillNo = null;
             }
         }
 
         if (data.fields.firstTermPaidAmt !== undefined && isExistsStudent.firstTermPaidAmt !== data.fields.firstTermPaidAmt) {
             if (data.fields.firstTermPaidAmt !== 0) {
-                data.fields.firstTermBillNo = await generateUniqueBillNo(5); 
+                data.fields.firstTermBillNo = await generateUniqueBillNo(5);
             } else {
-                 data.fields.firstTermBillNo = null; 
+                data.fields.firstTermBillNo = null;
             }
         }
 
         if (data.fields.secondTermPaidAmt !== undefined && isExistsStudent.secondTermPaidAmt !== data.fields.secondTermPaidAmt) {
             if (data.fields.secondTermPaidAmt !== 0) {
-                data.fields.secondTermBillNo = await generateUniqueBillNo(5); 
+                data.fields.secondTermBillNo = await generateUniqueBillNo(5);
             } else {
-                 data.fields.secondTermBillNo= null; 
+                data.fields.secondTermBillNo = null;
             }
         }
 
@@ -326,38 +327,38 @@ const updateStudentAdmin = async (req, res) => {
 
         const fieldsToUpdate = req.body
 
-        
+
         let isExistsStudent = await StudentModel.findById(id)
-        
+
         if (!isExistsStudent) {
             throw new Error("No Student Found")
         }
-        
-        
-       
+
+
+
 
         if (fieldsToUpdate.adminssionPaidAmt !== undefined && isExistsStudent.adminssionPaidAmt !== fieldsToUpdate.adminssionPaidAmt) {
             if (fieldsToUpdate.adminssionPaidAmt !== 0) {
-                fieldsToUpdate.admissionBillNo = await generateUniqueBillNo(5); 
+                fieldsToUpdate.admissionBillNo = await generateUniqueBillNo(5);
             } else {
-                 fieldsToUpdate.admissionBillNo = null; 
+                fieldsToUpdate.admissionBillNo = null;
             }
         }
 
-        
+
         if (fieldsToUpdate.firstTermPaidAmt !== undefined && isExistsStudent.firstTermPaidAmt !== fieldsToUpdate.firstTermPaidAmt) {
             if (fieldsToUpdate.firstTermPaidAmt !== 0) {
-                fieldsToUpdate.firstTermBillNo = await generateUniqueBillNo(5); 
+                fieldsToUpdate.firstTermBillNo = await generateUniqueBillNo(5);
             } else {
-                 fieldsToUpdate.firstTermBillNo = null; 
+                fieldsToUpdate.firstTermBillNo = null;
             }
         }
 
         if (fieldsToUpdate.secondTermPaidAmt !== undefined && isExistsStudent.secondTermPaidAmt !== fieldsToUpdate.secondTermPaidAmt) {
             if (fieldsToUpdate.secondTermPaidAmt !== 0) {
-                fieldsToUpdate.secondTermBillNo = await generateUniqueBillNo(5); 
+                fieldsToUpdate.secondTermBillNo = await generateUniqueBillNo(5);
             } else {
-                 fieldsToUpdate.secondTermBillNo= null; 
+                fieldsToUpdate.secondTermBillNo = null;
             }
         }
 
@@ -378,9 +379,9 @@ const getStudentsList = async (req, res) => {
         let data = await StudentModel.find({})
 
         if (!data.length) {
-         return res.status(200).json({ message: "no students Available", data, ok: true })
+            return res.status(200).json({ message: "no students Available", data, ok: true })
         }
-        
+
         res.status(200).json({ message: "fetched student data succesfully", data, ok: true })
     }
     catch (err) {
@@ -389,93 +390,93 @@ const getStudentsList = async (req, res) => {
     }
 }
 
-const getActiveAccountant = async (req, res)=>{
-    try{
+const getActiveAccountant = async (req, res) => {
+    try {
         let data = await AccountantModel.find({})
 
-        if(!data.length){
+        if (!data.length) {
             throw new Error("no Accountants found")
         }
 
         res.status(200).json({ message: "fetched accountant data succesfully", data, ok: true })
 
     }
-    catch(err){
+    catch (err) {
         console.log("error from getActiveAccountant", err.messaage)
         res.status(400).json({ message: err.message, error: "Accountant not fetched", ok: false });
     }
 }
 
-const updatePermissionAccountant = async (req, res)=>{
-    try{
+const updatePermissionAccountant = async (req, res) => {
+    try {
         let id = req.params.id
         let { permissionStatus } = req.body
 
-        
+
         let data = await AccountantModel.findByIdAndUpdate(
-            id, 
-            { permissionStatus }, 
-            { returnDocument: "after" }  
+            id,
+            { permissionStatus },
+            { returnDocument: "after" }
         )
 
         if (!data) {
-            throw new Error("Accountant not found")  
+            throw new Error("Accountant not found")
         }
 
         res.status(200).json({ message: "Updated permission successfully", data, ok: true })
-   }
-    catch(err){
+    }
+    catch (err) {
         console.log("error from getActiveAccountant", err.messaage)
         res.status(400).json({ message: err.message, error: "not Updated permsison successfully", ok: false });
     }
 }
 
-const changesMadeOnDate = async(req, res)=>{
-    try{
-        let { modifiedDate, fieldsModified, modifiedBy, relationId}= req.body
+const changesMadeOnDate = async (req, res) => {
+    try {
+        let { modifiedDate, fieldsModified, modifiedBy, relationId } = req.body
         modifiedBy = req.admin.role
-        let data = await changesmadeModel.create({ modifiedDate, fieldsModified, modifiedBy, relationId})
+        let data = await changesmadeModel.create({ modifiedDate, fieldsModified, modifiedBy, relationId })
 
-        res.status(200).json({message:"created successfully", data, ok:true})
+        res.status(200).json({ message: "created successfully", data, ok: true })
     }
-    catch(err){
+    catch (err) {
         console.log("error from changesMadeOnDate", err.messaage)
         res.status(400).json({ message: err.message, error: "no changes made successfully", ok: false });
     }
 }
 
-const changesRetrived = async (req, res)=>{
-    try{
-        let {date} = req.params
+const changesRetrived = async (req, res) => {
+    try {
+        let { date } = req.params
 
-        let data = await changesmadeModel.find({modifiedDate:date})
-        res.status(200).json({message:"retrived successfully", data, ok:true})
+        let data = await changesmadeModel.find({ modifiedDate: date })
+        res.status(200).json({ message: "retrived successfully", data, ok: true })
 
     }
-    catch(err){
+    catch (err) {
         console.log("error from changesRetrived", err.messaage)
-        res.status(400).json({ message: err.message, error: "no changes retrived successfully", ok: false }); 
+        res.status(400).json({ message: err.message, error: "no changes retrived successfully", ok: false });
     }
 }
 
-const editStudentMandatoryDetails = async (req, res)=>{
+const editStudentMandatoryDetails = async (req, res) => {
     try {
         let { studentId } = req.params
-        let {profileData} = req.body;
+        let { profileData } = req.body;
 
         let isExists = await StudentModel.findById(studentId)
 
         if (!isExists) {
-            return res.status(404).json({ message: "Student not found", ok:false });
+            return res.status(404).json({ message: "Student not found", ok: false });
         }
 
-       Object.entries(profileData).forEach(([key, value])=>{
-        isExists.mandatory[key]=value
-       })
+        Object.entries(profileData).forEach(([key, value]) => {
+            isExists.mandatory[key] = value
+        })
 
         await isExists.save()
 
-        res.status(200).json({ message: "updated student profile data successfully", data:isExists, ok: true })
+        res.status(200).json({ message: "updated student profile data successfully", data: isExists, ok: true })
 
     }
     catch (err) {
@@ -484,29 +485,133 @@ const editStudentMandatoryDetails = async (req, res)=>{
     }
 }
 
-const editStudentNonMandatoryDetails = async (req, res)=>{
+const editStudentNonMandatoryDetails = async (req, res) => {
     try {
         let { studentId } = req.params
-        let {nonMandatory} = req.body;
+        let { nonMandatory } = req.body;
 
         let isExists = await StudentModel.findById(studentId)
 
         if (!isExists) {
-            return res.status(404).json({ message: "Student not found", ok:false });
+            return res.status(404).json({ message: "Student not found", ok: false });
         }
 
-       Object.entries(nonMandatory).forEach(([key, value])=>{
-        isExists.nonMandatory[key]=value
-       })
+        Object.entries(nonMandatory).forEach(([key, value]) => {
+            isExists.nonMandatory[key] = value
+        })
 
         await isExists.save()
-        res.status(200).json({ message: "updated student profile data successfully", data:isExists, ok: true })
+        res.status(200).json({ message: "updated student profile data successfully", data: isExists, ok: true })
     }
     catch (err) {
         console.log("error from editStudentProfile", err.messaage)
         res.status(400).json({ message: err.message, error: "no updateion made in student profile", ok: false });
     }
 }
+
+const getTakenSRNo = async (req, res) => {
+    try {
+        const students = await StudentModel.find({ isTcIssued: false }, 'srId');
+        const taken = students.map(s => parseInt(s.srId.split('-')[1], 10)); // Extract number from "SR-104"
+        res.status(200).json({ taken, ok: true, message: "sr id's fetched successfully" });
+    }
+    catch (err) {
+        console.log("error from getSR rfrom admin", err.messaage)
+        res.status(400).json({ message: err.message, error: "no Taken sr from the admin only", ok: false });
+    }
+}
+
+
+const generateTC = async (req, res) => {
+    try {
+        let { srId } = req.params
+        const student = await StudentModel.updateOne({ srId }, { $set: { isTcIssued: true } }, { returnDocument: "after" });
+
+        if (!student) {
+            return res.status(404).json({ ok: false, message: "student is not available" })
+        }
+
+        res.status(200).json({ data: student, ok: true, message: `TC generated for ${student.studentName} successfully` });
+    }
+    catch (err) {
+        console.log("error from generate TC from admin", err.messaage)
+        res.status(400).json({ message: err.message, error: "student srId is not available", ok: false });
+    }
+}
+
+
+const generateExcelFile = async (req, res) => {
+    try {
+        const students = await StudentModel.find(); // fetch your data
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Students');
+
+        // Add headers
+        worksheet.columns = studentFeeColumns
+
+        // Add rows
+        students.forEach((student) => {
+            worksheet.addRow({
+                newOld: student.newOld,
+                studentClass: student.studentClass,
+                section: student.section,
+                studentName: student.studentName,
+
+                adminssionAmt: student.adminssionAmt,
+                adminssionPaidAmt: student.adminssionPaidAmt,
+                admissionBillNo: student.admissionBillNo,
+                admissionDate: student.admissionDate,
+
+                firstTermAmt: student.firstTermAmt,
+                firstTermPaidAmt: student.firstTermPaidAmt,
+                firstTermBillNo: student.firstTermBillNo,
+                firstTermDate: student.firstTermDate,
+
+                secondTermAmt: student.secondTermAmt,
+                secondTermPaidAmt: student.secondTermPaidAmt,
+                secondTermBillNo: student.secondTermBillNo,
+                secondTermDate: student.secondTermDate,
+
+                annualFee: student.annualFee,
+                annualPaidAmt: student.annualPaidAmt,
+                dues: student.dues,
+                concession: student.concession,
+                remarks: student.remarks,
+
+                busFirstTermAmt: student.busFirstTermAmt,
+                busFirstTermPaidAmt: student.busFirstTermPaidAmt,
+                busfirstTermDues: student.busfirstTermDues,
+
+                busSecondTermAmt: student.busSecondTermAmt,
+                busSecondTermPaidAmt: student.busSecondTermPaidAmt,
+                busSecondTermDues: student.busSecondTermDues,
+
+                busPoint: student.busPoint,
+                whatsappNumber: student.whatsappNumber,
+            });
+        })
+
+        // Set response headers
+        res.setHeader(
+            'Content-Type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        );
+        res.setHeader(
+            'Content-Disposition',
+            'attachment; filename=' + 'StudentsFee.xlsx'
+        );
+
+        await workbook.xlsx.write(res);
+        res.end();
+    }
+    catch (err) {
+        console.log("error from generate Excel file from admin", err.messaage)
+        res.status(400).json({ message: err.message, error: "Excel file is not generated", ok: false });
+
+    }
+}
+
 
 module.exports = {
     adminLogin,
@@ -528,5 +633,9 @@ module.exports = {
     changesRetrived,
     editStudentMandatoryDetails,
     editStudentNonMandatoryDetails,
+
+    getTakenSRNo,
+    generateTC,
+    generateExcelFile
 
 }

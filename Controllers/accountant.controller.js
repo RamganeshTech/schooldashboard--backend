@@ -8,9 +8,10 @@ const jwt = require('jsonwebtoken');
 const studentModel = require("../Models/student.model");
 const adminNotificationModel = require("../Models/adminNotification.model");
 
+const ExcelJS = require('exceljs');
 const generateUniqueBillNo = require('../Utils/generateUniqueBillNo');
 const changesmadeModel = require("../Models/changesmade.model");
-
+const studentFeeColumns = require('../Constants/constants')
 let accountantLogin = async (req, res) => {
 
     try {
@@ -165,6 +166,7 @@ const getAccountantRole = (req, res) => {
 const addStudent = async (req, res) => {
     try {
         let {
+            srId,
             newOld,
             studentClass,
             section,
@@ -217,6 +219,7 @@ const addStudent = async (req, res) => {
         }
 
         let data = await studentModel.create({
+            srId,
             newOld,
             studentClass,
             studentName,
@@ -259,18 +262,29 @@ const addStudent = async (req, res) => {
 
 const getStudentsList = async (req, res) => {
     try {
-        let data = await studentModel.find({})
+        let data = await studentModel.find({isTcIssued:false})
 
         if (!data.length) {
             return res.status(200).json({ message: "no students Available", data, ok: true })
         }
-
 
         res.status(200).json({ message: "fetched student data succesfully", data, ok: true })
     }
     catch (err) {
         console.log(err)
         res.status(400).json({ message: err.message, error: "StudentList not fetched", ok: false });
+    }
+}
+
+const getTakenSRNo = async (req, res) => {
+    try {
+        const students = await studentModel.find({isTcIssued:false}, 'srId');
+        const taken = students.map(s => s.srId ? parseInt(s.srId.split('-')[1], 10) : null); // Extract number from "SR-104"
+        res.status(200).json({ taken, ok:true, message:"sr id's fetched successfully" });
+    }
+    catch (err) {
+        console.log("error from getSR rfrom admin", err.messaage)
+        res.status(400).json({ message: err.message, error: "no Taken SR Id avaialble", ok: false });
     }
 }
 
@@ -438,6 +452,79 @@ const editStudentNonMandatoryDetails = async (req, res)=>{
     }
 }
 
+
+const generateExcelFile = async (req, res) => {
+    try {
+        const students = await studentModel.find(); // fetch your data
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Students');
+
+        // Add headers
+        worksheet.columns = studentFeeColumns
+
+        // Add rows
+        students.forEach((student) => {
+            worksheet.addRow({
+                newOld: student.newOld,
+                studentClass: student.studentClass,
+                section: student.section,
+                studentName: student.studentName,
+
+                adminssionAmt: student.adminssionAmt,
+                adminssionPaidAmt: student.adminssionPaidAmt,
+                admissionBillNo: student.admissionBillNo,
+                admissionDate: student.admissionDate,
+
+                firstTermAmt: student.firstTermAmt,
+                firstTermPaidAmt: student.firstTermPaidAmt,
+                firstTermBillNo: student.firstTermBillNo,
+                firstTermDate: student.firstTermDate,
+
+                secondTermAmt: student.secondTermAmt,
+                secondTermPaidAmt: student.secondTermPaidAmt,
+                secondTermBillNo: student.secondTermBillNo,
+                secondTermDate: student.secondTermDate,
+
+                annualFee: student.annualFee,
+                annualPaidAmt: student.annualPaidAmt,
+                dues: student.dues,
+                concession: student.concession,
+                remarks: student.remarks,
+
+                busFirstTermAmt: student.busFirstTermAmt,
+                busFirstTermPaidAmt: student.busFirstTermPaidAmt,
+                busfirstTermDues: student.busfirstTermDues,
+
+                busSecondTermAmt: student.busSecondTermAmt,
+                busSecondTermPaidAmt: student.busSecondTermPaidAmt,
+                busSecondTermDues: student.busSecondTermDues,
+
+                busPoint: student.busPoint,
+                whatsappNumber: student.whatsappNumber,
+            });
+        })
+
+        // Set response headers
+        res.setHeader(
+            'Content-Type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        );
+        res.setHeader(
+            'Content-Disposition',
+            'attachment; filename=' + 'StudentsFee.xlsx'
+        );
+
+        await workbook.xlsx.write(res);
+        res.end();
+    }
+    catch (err) {
+        console.log("error from generate Excel file from accountant", err.messaage)
+        res.status(400).json({ message: err.message, error: "Excel file is not generated", ok: false });
+
+    }
+}
+
 module.exports = {
     accountantLogin,
     accountantRefreshAccessToken,
@@ -452,5 +539,8 @@ module.exports = {
     changesMadeOnDate,
     changesRetrived,
     editStudentMandatoryDetails,
-    editStudentNonMandatoryDetails
+    editStudentNonMandatoryDetails,
+
+    getTakenSRNo,
+    generateExcelFile
 }
