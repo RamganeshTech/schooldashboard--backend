@@ -137,6 +137,9 @@ const StudentSchema = mongoose.Schema({
         type:Boolean,
         default:false,
     },
+    studentImage:{
+         type:String,
+    },
     mandatory: {
         gender: { type: String, default: null },
         dob: { type: String, default: null },

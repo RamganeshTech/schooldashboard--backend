@@ -6,10 +6,12 @@ const {adminLogin, refreshAccessToken, adminLogout, updateValue, createAccountan
     getStudentsList, getActiveAccountant, updatePermissionAccountant, changesMadeOnDate, 
     changesRetrived, editStudentMandatoryDetails, editStudentNonMandatoryDetails, getTakenSRNo,
     generateTC, generateExcelFile,
-    searchStudent} = require('../Controllers/admin.controller');
+    searchStudent,
+    uploadStudentImage} = require('../Controllers/admin.controller');
 
 const { verifyTokenMiddleware } = require('../Middleware/verifyTokenMiddleware');
 const { editStudentProfile } = require('../Controllers/accountant.controller');
+const { upload } = require('../Utils/s3upload');
 
 const router = express.Router()
 
@@ -44,5 +46,8 @@ router.get('/students/taken-sr-ids', verifyTokenMiddleware, getTakenSRNo)
 router.patch('/generatetc/:srId', verifyTokenMiddleware, generateTC)
 router.get('/excelfile', verifyTokenMiddleware, generateExcelFile)
 router.get('/searchstudent', searchStudent)
+
+router.post('/student/uploadimage/:studentId', upload.single('file'), uploadStudentImage);
+
 
 module.exports = router

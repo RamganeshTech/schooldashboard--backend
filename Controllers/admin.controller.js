@@ -16,6 +16,7 @@ const { parseExpiry } = require("../Utils/stringToSeconds");
 const adminNotificationModel = require("../Models/adminNotification.model");
 const generateUniqueBillNo = require('../Utils/generateUniqueBillNo');
 const changesmadeModel = require("../Models/changesmade.model");
+const { uploadImageToS3 } = require("../Utils/s3upload");
 
 
 
@@ -640,6 +641,30 @@ const searchStudent = async (req, res) => {
   }
 }
 
+
+
+const uploadStudentImage = async (req, res) => {
+  try {
+    let {studentId} = req.params
+
+    const file = req.file
+
+    if (!file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const uploadedUrl = await uploadImageToS3(file)
+
+
+    let data = await StudentModel.findByIdAndUpdate(studentId, {studentImage:uploadedUrl},{returnDocument:"after"})
+
+    res.status(200).json({ image: uploadedUrl , data, message:"image updated successfully", ok:true});
+  } catch (error) {
+    console.log("Image upload failed", error)
+    res.status(500).json({ message: 'Image upload failed', error , ok:false});
+  }
+};
+
 module.exports = {
     adminLogin,
     refreshAccessToken,
@@ -664,6 +689,7 @@ module.exports = {
     getTakenSRNo,
     generateTC,
     generateExcelFile,
-    searchStudent
+    searchStudent,
+    uploadStudentImage
 
 }

@@ -11,7 +11,8 @@ const adminNotificationModel = require("../Models/adminNotification.model");
 const ExcelJS = require('exceljs');
 const generateUniqueBillNo = require('../Utils/generateUniqueBillNo');
 const changesmadeModel = require("../Models/changesmade.model");
-const studentFeeColumns = require('../Constants/constants')
+const studentFeeColumns = require('../Constants/constants');
+const { uploadImageToS3 } = require('../Utils/s3upload');
 let accountantLogin = async (req, res) => {
 
     try {
@@ -131,13 +132,13 @@ const isAuthenticatedUser = async (req, res) => {
     const accountantaccessToken = req.cookies.accountantaccessToken;
 
     if (!accountantaccessToken) {
-        return res.status(200).json({ authenticated: false, error: "authentication failed", ok: false });
+        return res.status(401).json({ authenticated: false, error: "authentication failed", ok: false });
     }
 
     jwt.verify(accountantaccessToken, process.env.JWT_SECRET, (err, decoded) => {
         if (err) {
             console.log(" error occured in isAuthenticated api", err)
-            return res.status(200).json({ authenticated: false, error: "Authentication failed: Invalid token", ok: false });
+            return res.status(401).json({ authenticated: false, error: "Authentication failed: Invalid token", ok: false });
         }
         return res.status(200).json({ authenticated: true, role: decoded.role }); // Send user role if authenticated
     });
@@ -249,7 +250,7 @@ const addStudent = async (req, res) => {
             busSecondTermDues,
             busPoint,
             whatsappNumber,
-           
+
         })
 
         res.status(201).json({ message: "student data succesfully created", data, ok: true })
@@ -262,7 +263,7 @@ const addStudent = async (req, res) => {
 
 const getStudentsList = async (req, res) => {
     try {
-        let data = await studentModel.find({isTcIssued:false})
+        let data = await studentModel.find({ isTcIssued: false })
 
         if (!data.length) {
             return res.status(200).json({ message: "no students Available", data, ok: true })
@@ -278,9 +279,9 @@ const getStudentsList = async (req, res) => {
 
 const getTakenSRNo = async (req, res) => {
     try {
-        const students = await studentModel.find({isTcIssued:false}, 'srId');
+        const students = await studentModel.find({ isTcIssued: false }, 'srId');
         const taken = students.map(s => s.srId ? parseInt(s.srId.split('-')[1], 10) : null); // Extract number from "SR-104"
-        res.status(200).json({ taken, ok:true, message:"sr id's fetched successfully" });
+        res.status(200).json({ taken, ok: true, message: "sr id's fetched successfully" });
     }
     catch (err) {
         console.log("error from getSR rfrom admin", err.messaage)
@@ -398,24 +399,24 @@ const changesRetrived = async (req, res) => {
     }
 }
 
-const editStudentMandatoryDetails = async (req, res)=>{
+const editStudentMandatoryDetails = async (req, res) => {
     try {
         let { studentId } = req.params
-        let {profileData} = req.body;
+        let { profileData } = req.body;
 
         let isExists = await studentModel.findById(studentId)
 
         if (!isExists) {
-            return res.status(404).json({ message: "Student not found", ok:false });
+            return res.status(404).json({ message: "Student not found", ok: false });
         }
 
-       Object.entries(profileData).forEach(([key, value])=>{
-        isExists.mandatory[key]=value
-       })
+        Object.entries(profileData).forEach(([key, value]) => {
+            isExists.mandatory[key] = value
+        })
 
         await isExists.save()
 
-        res.status(200).json({ message: "updated student profile data successfully", data:isExists, ok: true })
+        res.status(200).json({ message: "updated student profile data successfully", data: isExists, ok: true })
 
     }
     catch (err) {
@@ -424,26 +425,26 @@ const editStudentMandatoryDetails = async (req, res)=>{
     }
 }
 
-const editStudentNonMandatoryDetails = async (req, res)=>{
+const editStudentNonMandatoryDetails = async (req, res) => {
     try {
         let { studentId } = req.params
-        let {nonMandatory} = req.body;
+        let { nonMandatory } = req.body;
 
         console.log("profile data", nonMandatory)
 
         let isExists = await studentModel.findById(studentId)
 
         if (!isExists) {
-            return res.status(404).json({ message: "Student not found", ok:false });
+            return res.status(404).json({ message: "Student not found", ok: false });
         }
 
-       Object.entries(nonMandatory).forEach(([key, value])=>{
-        isExists.nonMandatory[key]=value
-       })
+        Object.entries(nonMandatory).forEach(([key, value]) => {
+            isExists.nonMandatory[key] = value
+        })
 
         await isExists.save()
 
-        res.status(200).json({ message: "updated student non mandatory profile data successfully", data:isExists, ok: true })
+        res.status(200).json({ message: "updated student non mandatory profile data successfully", data: isExists, ok: true })
 
     }
     catch (err) {
@@ -527,31 +528,56 @@ const generateExcelFile = async (req, res) => {
 
 
 const searchStudent = async (req, res) => {
-  try {
-    const { query } = req.query;
+    try {
+        const { query } = req.query;
 
-    let searchResult;
+        let searchResult;
 
-    const isNumeric = /^[0-9]+$/.test(query);
+        const isNumeric = /^[0-9]+$/.test(query);
 
-    if (isNumeric) {
-      // Search by SR ID (exact match or partial match)
-      searchResult = await studentModel.find({
-        srId: { $regex: query, $options: 'i' },isTcIssued:false
-      });
-    } else {
-      // Search by student name (case-insensitive)
-      searchResult = await studentModel.find({
-        studentName: { $regex: query, $options: 'i' }, isTcIssued:false
-      });
+        if (isNumeric) {
+            // Search by SR ID (exact match or partial match)
+            searchResult = await studentModel.find({
+                srId: { $regex: query, $options: 'i' }, isTcIssued: false
+            });
+        } else {
+            // Search by student name (case-insensitive)
+            searchResult = await studentModel.find({
+                studentName: { $regex: query, $options: 'i' }, isTcIssued: false
+            });
+        }
+
+        res.status(200).json({ data: searchResult, ok: false });
+    } catch (error) {
+        console.error('Search error:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
     }
-
-    res.status(200).json({data:searchResult, ok:false});
-  } catch (error) {
-    console.error('Search error:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
-  }
 }
+
+const uploadStudentImage = async (req, res) => {
+    try {
+          let {studentId} = req.params
+
+        const file = req.file
+        // console.log('Received file:', files.originalname, files.mimetype); // Check file mime type and name
+
+        if (!file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        const uploadedUrl = "https://static.vecteezy.com/system/resources/previews/024/724/633/non_2x/a-happy-smiling-young-college-student-with-a-book-in-hand-isolated-on-a-transparent-background-generative-ai-free-png.png"
+        
+        // await new Promise(res=> setTimeout(res(), 2000))
+        // const uploadedUrl = await uploadImageToS3(file)
+
+        let data = await studentModel.findByIdAndUpdate(studentId, { studentImage: uploadedUrl }, { returnDocument: "after" })
+
+        res.status(200).json({ image: uploadedUrl, data, message:"image updated successfully" , ok:true});
+    } catch (error) {
+        console.log("Image upload failed", error)
+        res.status(500).json({ message: 'Image upload failed', error, ok: false });
+    }
+};
 
 module.exports = {
     accountantLogin,
@@ -571,5 +597,6 @@ module.exports = {
 
     getTakenSRNo,
     generateExcelFile,
-    searchStudent
+    searchStudent,
+    uploadStudentImage
 }
