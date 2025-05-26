@@ -565,10 +565,7 @@ const uploadStudentImage = async (req, res) => {
             return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        const uploadedUrl = "https://static.vecteezy.com/system/resources/previews/024/724/633/non_2x/a-happy-smiling-young-college-student-with-a-book-in-hand-isolated-on-a-transparent-background-generative-ai-free-png.png"
-        
-        // await new Promise(res=> setTimeout(res(), 2000))
-        // const uploadedUrl = await uploadImageToS3(file)
+        const uploadedUrl = await uploadImageToS3(file)
 
         let data = await studentModel.findByIdAndUpdate(studentId, { studentImage: uploadedUrl }, { returnDocument: "after" })
 
