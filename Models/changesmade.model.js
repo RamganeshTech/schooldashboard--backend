@@ -1,4 +1,6 @@
-const mongoose = require('mongoose')
+// const mongoose = require('mongoose')
+import mongoose from "mongoose";
+
 
 const ChangesMadeSchema = mongoose.Schema({
 
@@ -20,4 +22,6 @@ const ChangesMadeSchema = mongoose.Schema({
     minimize:true
 })
 
-module.exports = mongoose.model("Changesmade", ChangesMadeSchema )
+// module.exports = mongoose.model("Changesmade", ChangesMadeSchema )
+const ChangesMadeModel = mongoose.model("Changesmade", ChangesMadeSchema )
+export default ChangesMadeModel;

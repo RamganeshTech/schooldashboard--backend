@@ -1,5 +1,10 @@
-const AWS = require('aws-sdk')
-const dotenv = require('dotenv')
+// const AWS = require('aws-sdk')
+// const dotenv = require('dotenv')
+
+import AWS from "aws-sdk";
+import dotenv from "dotenv";
+
+
 
 dotenv.config({ path: '.env.production' });
 // Load from environment variables with fallback types
@@ -17,6 +22,9 @@ AWS.config.update({
 const s3 = new AWS.S3();
 const S3_BUCKET = BUCKET_NAME;
 
-module.exports = {
-  s3, S3_BUCKET
-}
+// module.exports = {
+//   s3, S3_BUCKET
+// }
+
+
+export { s3, S3_BUCKET };

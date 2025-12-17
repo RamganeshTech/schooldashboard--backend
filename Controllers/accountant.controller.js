@@ -1,18 +1,35 @@
-const bcrypt = require('bcrypt')
-const AccountantModel = require("../Models/accountant.model");
-const { parseExpiry } = require("../Utils/stringToSeconds");
-const { generateTokens } = require("../Utils/tokenUtils");
-const { validateAccountant } = require("../Validation/validation");
+import jwt  from 'jsonwebtoken';
+import bcrypt from "bcrypt"
+import ExcelJS from "exceljs"
+import { validateAccountant } from '../Validation/validation.js';
+import AccountantModel from './../Models/accountant.model.js';
+import StudentModel from '../Models/student.model.js';
+import generateUniqueBillNo from '../Utils/generateUniqueBillNo.js';
+import ChangesMadeModel from './../Models/changesmade.model.js';
+import { uploadImageToS3 } from '../Utils/s3upload.js';
+import AdminNotificationModel from './../Models/adminNotification.model.js';
+import { generateTokens } from '../Utils/tokenUtils.js';
+import { parseExpiry } from '../Utils/stringToSeconds.js';
+import studentFeeColumns from '../Constants/constants.js';
 
-const jwt = require('jsonwebtoken');
-const studentModel = require("../Models/student.model");
-const adminNotificationModel = require("../Models/adminNotification.model");
+// const bcrypt = require('bcrypt')
+// const AccountantModel = require("../Models/accountant.model");
+// const { parseExpiry } = require("../Utils/stringToSeconds");
+// const { generateTokens } = require("../Utils/tokenUtils");
+// const { validateAccountant } = require("../Validation/validation");
 
-const ExcelJS = require('exceljs');
-const generateUniqueBillNo = require('../Utils/generateUniqueBillNo');
-const changesmadeModel = require("../Models/changesmade.model");
-const studentFeeColumns = require('../Constants/constants');
-const { uploadImageToS3 } = require('../Utils/s3upload');
+// const jwt = require('jsonwebtoken');
+// const studentModel = require("../Models/student.model");
+// const adminNotificationModel = require("../Models/adminNotification.model");
+
+// const ExcelJS = require('exceljs');
+// const generateUniqueBillNo = require('../Utils/generateUniqueBillNo');
+// const changesmadeModel = require("../Models/changesmade.model");
+// const studentFeeColumns = require('../Constants/constants');
+// const { uploadImageToS3 } = require('../Utils/s3upload');
+
+
+
 let accountantLogin = async (req, res) => {
 
     try {
@@ -219,7 +236,7 @@ const addStudent = async (req, res) => {
             secondTermBillNo = await generateUniqueBillNo(5); // 5-digit bill number
         }
 
-        let data = await studentModel.create({
+        let data = await StudentModel.create({
             srId,
             newOld,
             studentClass,
@@ -263,7 +280,7 @@ const addStudent = async (req, res) => {
 
 const getStudentsList = async (req, res) => {
     try {
-        let data = await studentModel.find({ isTcIssued: false })
+        let data = await StudentModel.find({ isTcIssued: false })
 
         if (!data.length) {
             return res.status(200).json({ message: "no students Available", data, ok: true })
@@ -279,7 +296,7 @@ const getStudentsList = async (req, res) => {
 
 const getTakenSRNo = async (req, res) => {
     try {
-        const students = await studentModel.find({ isTcIssued: false }, 'srId');
+        const students = await StudentModel.find({ isTcIssued: false }, 'srId');
         const taken = students.map(s => s.srId ? parseInt(s.srId.split('-')[1], 10) : null); // Extract number from "SR-104"
         res.status(200).json({ taken, ok: true, message: "sr id's fetched successfully" });
     }
@@ -297,7 +314,7 @@ let updateStudentWithPermission = async (req, res) => {
 
 
         const { studentName, fieldsRequired, studentId } = req.body
-        let isExists = await studentModel.findById(id)
+        let isExists = await StudentModel.findById(id)
 
         if (!isExists) {
             throw new Error("student not found")
@@ -305,7 +322,7 @@ let updateStudentWithPermission = async (req, res) => {
 
         let accountantUser = await AccountantModel.findById(accountantId)
 
-        let data = await adminNotificationModel.create({ email: accountantUser.email, requestTo: "update", fields: fieldsRequired, studentId, studentName, status: "false" })
+        let data = await AdminNotificationModel.create({ email: accountantUser.email, requestTo: "update", fields: fieldsRequired, studentId, studentName, status: "false" })
 
         res.status(200).json({ message: "notification sent successsfully", data, ok: true })
     }
@@ -321,7 +338,7 @@ let updateStudentDirectly = async (req, res) => {
         let id = req.params.id
         const updatedFields = req.body
 
-        let isExists = await studentModel.findById(id)
+        let isExists = await StudentModel.findById(id)
 
         if (!isExists) {
             throw new Error("student not found")
@@ -337,7 +354,7 @@ let updateStudentDirectly = async (req, res) => {
             updatedFields.secondTermBillNo = await generateUniqueBillNo(5);
         }
 
-        let data = await studentModel.findByIdAndUpdate(isExists._id, updatedFields, { returnDoucumnet: "after" })
+        let data = await StudentModel.findByIdAndUpdate(isExists._id, updatedFields, { returnDoucumnet: "after" })
         res.status(200).json({ message: "updated student successsfully", data, ok: true })
     }
     catch (err) {
@@ -375,7 +392,7 @@ const changesMadeOnDate = async (req, res) => {
             modifiedBy = accountant.email
         }
 
-        let data = await changesmadeModel.create({ modifiedDate, fieldsModified, modifiedBy, relationId })
+        let data = await ChangesMadeModel.create({ modifiedDate, fieldsModified, modifiedBy, relationId })
 
         res.status(200).json({ message: "created successfully", data, ok: true })
     }
@@ -389,7 +406,7 @@ const changesRetrived = async (req, res) => {
     try {
         let { date } = req.params
 
-        let data = await changesmadeModel.find({ modifiedDate: date })
+        let data = await ChangesMadeModel.find({ modifiedDate: date })
         res.status(200).json({ message: "retrived successfully", data, ok: true })
 
     }
@@ -404,7 +421,7 @@ const editStudentMandatoryDetails = async (req, res) => {
         let { studentId } = req.params
         let { profileData } = req.body;
 
-        let isExists = await studentModel.findById(studentId)
+        let isExists = await StudentModel.findById(studentId)
 
         if (!isExists) {
             return res.status(404).json({ message: "Student not found", ok: false });
@@ -432,7 +449,7 @@ const editStudentNonMandatoryDetails = async (req, res) => {
 
         console.log("profile data", nonMandatory)
 
-        let isExists = await studentModel.findById(studentId)
+        let isExists = await StudentModel.findById(studentId)
 
         if (!isExists) {
             return res.status(404).json({ message: "Student not found", ok: false });
@@ -456,7 +473,7 @@ const editStudentNonMandatoryDetails = async (req, res) => {
 
 const generateExcelFile = async (req, res) => {
     try {
-        const students = await studentModel.find(); // fetch your data
+        const students = await StudentModel.find(); // fetch your data
 
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Students');
@@ -537,12 +554,12 @@ const searchStudent = async (req, res) => {
 
         if (isNumeric) {
             // Search by SR ID (exact match or partial match)
-            searchResult = await studentModel.find({
+            searchResult = await StudentModel.find({
                 srId: { $regex: query, $options: 'i' }, isTcIssued: false
             });
         } else {
             // Search by student name (case-insensitive)
-            searchResult = await studentModel.find({
+            searchResult = await StudentModel.find({
                 studentName: { $regex: query, $options: 'i' }, isTcIssued: false
             });
         }
@@ -567,7 +584,7 @@ const uploadStudentImage = async (req, res) => {
 
         const uploadedUrl = await uploadImageToS3(file)
 
-        let data = await studentModel.findByIdAndUpdate(studentId, { studentImage: uploadedUrl }, { returnDocument: "after" })
+        let data = await StudentModel.findByIdAndUpdate(studentId, { studentImage: uploadedUrl }, { returnDocument: "after" })
 
         res.status(200).json({ image: uploadedUrl, data, message:"image updated successfully" , ok:true});
     } catch (error) {
@@ -576,12 +593,13 @@ const uploadStudentImage = async (req, res) => {
     }
 };
 
-module.exports = {
+export  {
     accountantLogin,
     accountantRefreshAccessToken,
     accountantLogout,
     isAuthenticatedUser,
     getAccountantRole,
+    
     addStudent,
     getStudentsList,
     updateStudentWithPermission,

@@ -32,7 +32,13 @@ const validateAccountant = async  (req)=>{
 
 }
 
-module.exports = {
+// module.exports = {
+//   validateAdmin,
+//   validateAccountant
+// }
+
+
+export {
   validateAdmin,
-  validateAccountant
+validateAccountant
 }

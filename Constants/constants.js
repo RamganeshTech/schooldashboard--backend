@@ -37,4 +37,5 @@ const studentFeeColumns = [
   { header: 'WhatsApp No', key: 'whatsappNumber', width: 20 },
 ];
 
-module.exports = studentFeeColumns;
+// module.exports = studentFeeColumns;
+export default studentFeeColumns;

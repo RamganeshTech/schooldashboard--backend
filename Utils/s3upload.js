@@ -1,8 +1,11 @@
-const multer = require('multer');
-const sharp = require('sharp');
+// const multer = require('multer');
+// const sharp = require('sharp');
 
+import multer from "multer"
+import sharp from "sharp"
+import { s3, S3_BUCKET } from "../Config/awssdk.js";
 
-const { s3, S3_BUCKET } = require('../Config/awssdk.js'); 
+// const { s3, S3_BUCKET } = require('../Config/awssdk.js'); 
 
 // import AWS from 'aws-sdk';
 
@@ -30,6 +33,11 @@ const uploadImageToS3 = async (file) => {
 };
 
 
-module.exports={
-upload, uploadImageToS3
+// module.exports={
+// upload, uploadImageToS3
+// }
+
+
+export {
+  upload, uploadImageToS3
 }

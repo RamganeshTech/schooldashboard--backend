@@ -1,0 +1,343 @@
+import UserModel from "../../../Models/New_Model/UserModel/userModel.model.js";
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { isValidEmail, isValidPhone } from "../../../Utils/basicValidation.js";
+
+const JWT_SECRET = process.env.JWT_SECRET // store in env
+
+export const createUser = async (req, res) => {
+  try {
+    const { schoolId, email, userName, password, phoneNo, role, isPlatformAdmin = false } = req.body;
+
+    // Validate required fields
+    if (!phoneNo) {
+      return res.status(400).json({ ok: false, message: "phoneNo is required" });
+    }
+
+    // if (phoneNo?.length !== 10) {
+    //   return res.status(400).json({ ok: false, message: "phoneNo should be 10 digits" });
+    // }
+
+
+    if (!schoolId) {
+      return res.status(400).json({ message: "schoolId must be provided", ok: false });
+
+    }
+
+
+    if (phoneNo && !isValidPhone(phoneNo)) {
+      return res.status(400).json({ message: "Invalid phone number format", ok: false });
+    }
+
+    // 2. Validate formats (assuming you have these helpers)
+    if (email && !isValidEmail(email)) {
+      return res.status(400).json({ message: "Invalid email format", ok: false });
+    }
+
+    if (!userName || !password || !role) {
+      return res.status(400).json({ ok: false, message: "userName, password, and role are required" });
+    }
+
+    // Check for existing platform admin if isPlatformAdmin = true
+    if (isPlatformAdmin) {
+      const existingAdmin = await UserModel.findOne({ isPlatformAdmin: true });
+
+      if (existingAdmin) {
+        return res.status(400).json({ message: "Only one platform admin is allowed", ok: false });
+      }
+    }
+
+
+
+    const filter = {
+      $or: [{ email: email }, { phoneNo: phoneNo }]
+    }
+    const isDuplicate = await UserModel.findOne(filter);
+
+    if (isDuplicate) {
+      return res.status(400).json({ message: "Email or phoneno is already in use", ok: false });
+    }
+
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Prepare user data
+    const userData = {
+      userName,
+      password: hashedPassword,
+      role,
+      phoneNo,
+      email,
+      schoolId: schoolId,
+      ...(isPlatformAdmin ? { isPlatformAdmin: true } : {}) // only store if true
+    };
+
+    const newUser = await UserModel.create(userData)
+
+
+    const userResponse = newUser.toObject();
+    delete userResponse.password;
+
+
+    console.log("newuser", newUser)
+
+    return res.status(201).json({
+      message: "User created successfully",
+      user: newUser,
+      ok: true
+    });
+  } catch (err) {
+    console.error(err);
+    if (err.code === 11000) {
+      // duplicate key error
+      return res.status(400).json({ message: "Email already exists", ok: false });
+    }
+    res.status(500).json({ ok: false, message: "Server error", error: err?.message });
+  }
+};
+
+
+
+export const loginUser = async (req, res) => {
+  try {
+    const { identifier, password } = req.body;
+
+    if (!identifier || !password) {
+      return res.status(400).json({ ok: false, message: "Email/PhoneNo and and password are required" });
+    }
+
+    // Find user by email OR phoneNo
+    const user = await UserModel.findOne({
+      $or: [
+        { email: identifier },
+        { phoneNo: identifier }
+      ]
+    });
+
+    // const user = await UserModel.findOne({ phoneNo })
+    if (!user) {
+      return res.status(401).json({ ok: false, message: "Invalid credentials" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ ok: false, message: "Invalid credentials" });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { _id: user._id, role: user.role, email: user.email, phoneNo: user.phoneNo, isPlatformAdmin: user?.isPlatformAdmin || false, schoolId: user.schoolId },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // Send token in headers and also in body
+    res.setHeader("Authorization", `Bearer ${token}`);
+    return res.status(200).json({
+      ok: true,
+      message: "Login successful",
+      token,
+      user: {
+        _id: user._id,
+        userName: user.userName,
+        email: user.email,
+        phoneNo: user.phoneNo,
+        role: user.role,
+        isPlatformAdmin: user.isPlatformAdmin || false
+      }
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ ok: false, message: "Server error", error: err?.message });
+  }
+};
+
+// --------------------- LOGOUT ---------------------
+// Note: JWT cannot truly be invalidated without storing blacklist or changing secret.
+// So logout is usually handled on client by deleting the token.
+export const logoutUser = async (req, res) => {
+  try {
+    // If you want, you can also tell the frontend to delete the token
+    return res.status(200).json({
+      ok: true,
+      message: "Logout successful, token invalidated on client"
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ ok: false, message: "Server error" });
+  }
+};
+
+
+
+
+export const isAuthenticated = async (req, res) => {
+  try {
+    const user = req?.user; // populated by auth middleware
+
+    if (!user?._id) {
+      return res.status(404).json({ ok: false, message: "User id not found" });
+    }
+
+    const isExist = await UserModel.findById(user._id);
+
+    if (!isExist) {
+      return res.status(404).json({ ok: false, message: "User not found" });
+    }
+
+    const data = {
+      _id: isExist._id,
+      role: isExist.role,
+      email: isExist.email,
+      schoolId: isExist.schoolId,
+      phoneNo: isExist.phoneNo,
+      userName: isExist.userName,
+      isAuthenticated: true,
+      isPlatformAdmin: isExist?.isPlatformAdmin || false
+    };
+
+
+    res.status(200).json({
+      ok: true,
+      message: "User is authenticated",
+      data
+    });
+
+  } catch (error) {
+    console.error("Error in isAuthenticated:", error);
+    res.status(500).json({
+      ok: false,
+      message: "Internal server error",
+      errorMessage: error instanceof Error ? error.message : error
+    });
+  }
+};
+
+
+
+
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(404).json({ ok: false, message: "User id not found" });
+    }
+
+    const isPA = await UserModel.findById(id);
+
+
+    if(isPA?.isPlatformAdmin){
+      return res.status(404).json({ ok: false, message: "Platform admin cannot be deleted" });
+    }
+
+    const isExist = await UserModel.findByIdAndDelete(id);
+
+    
+
+    if (!isExist) {
+      return res.status(404).json({ ok: false, message: "User not found" });
+    }
+
+    
+
+    return res.status(201).json({
+      message: "User deleted successfully",
+      user: isExist,
+      ok: true
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, message: "Server error", error: err?.message });
+  }
+};
+
+
+export const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    let { email, phoneNo, userName } = req.body;
+
+    // 1. Sanitize Inputs
+    email = email?.trim();
+    phoneNo = phoneNo?.trim();
+    userName = userName?.trim();
+
+    // 2. Validation
+    if (phoneNo && phoneNo.length !== 10) {
+      return res.status(400).json({ ok: false, message: "phoneNo should be 10 digits" });
+    }
+
+
+    if (phoneNo && !isValidPhone(phoneNo)) {
+      return res.status(400).json({ message: "Invalid phone number format", ok: false });
+    }
+
+    // 2. Validate formats (assuming you have these helpers)
+    if (email && !isValidEmail(email)) {
+      return res.status(400).json({ message: "Invalid email format", ok: false });
+    }
+
+    // 3. Build Update Object (Strict Whitelisting)
+    // We strictly only allow these three fields. 
+    // If the user sends 'role' or 'password', it is ignored here.
+    const updates = {};
+    if (email) updates.email = email;
+    if (phoneNo) updates.phoneNo = phoneNo;
+    if (userName) updates.userName = userName;
+
+    // If payload is empty or contains only invalid fields
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ ok: false, message: "No valid fields provided for update" });
+    }
+
+    // 4. Check for Conflicts (Uniqueness)
+    // We need to check if email or phone exists in ANOTHER user document.
+    const conflictChecks = [];
+    if (email) conflictChecks.push({ email });
+    if (phoneNo) conflictChecks.push({ phoneNo });
+
+    // Only run query if we are updating email or phone
+    if (conflictChecks.length > 0) {
+      const duplicate = await UserModel.findOne({
+        _id: { $ne: id }, // IMPORTANT: Exclude the current user from the check
+        $or: conflictChecks
+      });
+
+      if (duplicate) {
+        if (duplicate.email === email) {
+          return res.status(400).json({ message: "Email is already in use by another user", ok: false });
+        }
+        if (duplicate.phoneNo === phoneNo) {
+          return res.status(400).json({ message: "Phone number is already in use by another user", ok: false });
+        }
+      }
+    }
+
+    // 5. Perform Update
+    const updatedUser = await UserModel.findByIdAndUpdate(id, updates, {
+      new: true, // Return the updated document
+      runValidators: true
+    }).select("-password"); // Do not return the password
+
+    if (!updatedUser) {
+      return res.status(404).json({ ok: false, message: "User not found" });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      message: "User updated successfully",
+      user: updatedUser,
+    });
+
+  } catch (err) {
+    console.error("Error updating user:", err);
+    // Handle Mongoose duplicate key error (fallback)
+    if (err.code === 11000) {
+      return res.status(400).json({ message: "Duplicate field value entered", ok: false });
+    }
+    return res.status(500).json({ ok: false, message: "Server error", error: err.message });
+  }
+};

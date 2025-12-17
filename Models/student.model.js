@@ -1,4 +1,5 @@
-const mongoose = require('mongoose')
+// const mongoose = require('mongoose')
+import mongoose from "mongoose";
 
 const StudentSchema = mongoose.Schema({
     srId: {
@@ -206,4 +207,7 @@ const StudentSchema = mongoose.Schema({
     minimize: true
 });
 
-module.exports = mongoose.model('Student', StudentSchema);
+// module.exports = mongoose.model('Student', StudentSchema);
+const StudentModel = mongoose.model('Student', StudentSchema);
+
+export default StudentModel

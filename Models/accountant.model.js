@@ -1,4 +1,6 @@
-const mongoose = require('mongoose')
+// const mongoose = require('mongoose')
+import mongoose from "mongoose";
+
 
 const AccountantSchema = mongoose.Schema({
     email:{
@@ -23,6 +25,10 @@ const AccountantSchema = mongoose.Schema({
     minimize:true
 })
 
-const AccountantModel = mongoose.model("AccountantModel", AccountantSchema)
+// const AccountantModel = mongoose.model("AccountantModel", AccountantSchema)
 
-module.exports = AccountantModel
+// module.exports = AccountantModel
+
+const AccountantModel =mongoose.model("AccountantModel", AccountantSchema)
+
+export default AccountantModel

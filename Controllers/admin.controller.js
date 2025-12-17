@@ -1,22 +1,38 @@
-const { validateAdmin, validateAccountant } = require("../Validation/validation")
+// const { validateAdmin, validateAccountant } = require("../Validation/validation")
 
-const jwt = require('jsonwebtoken')
-const bcrypt = require('bcrypt')
+// const jwt = require('jsonwebtoken')
+// const bcrypt = require('bcrypt')
 
-const StudentModel = require('../Models/student.model')
-const ExcelJS = require('exceljs');
-const studentFeeColumns = require('../Constants/constants')
+// const StudentModel = require('../Models/student.model')
+// const ExcelJS = require('exceljs');
+// const studentFeeColumns = require('../Constants/constants')
 
-const { generateTokens } = require("../Utils/tokenUtils");
+// const { generateTokens } = require("../Utils/tokenUtils");
 
-const AccountantModel = require("../Models/accountant.model");
+// const AccountantModel = require("../Models/accountant.model");
 
-const DeletedAccountantCredentialsModel = require("../Models/deletedAccountantCredentials.model");
-const { parseExpiry } = require("../Utils/stringToSeconds");
-const adminNotificationModel = require("../Models/adminNotification.model");
-const generateUniqueBillNo = require('../Utils/generateUniqueBillNo');
-const changesmadeModel = require("../Models/changesmade.model");
-const { uploadImageToS3 } = require("../Utils/s3upload");
+// const DeletedAccountantCredentialsModel = require("../Models/deletedAccountantCredentials.model");
+// const { parseExpiry } = require("../Utils/stringToSeconds");
+// const adminNotificationModel = require("../Models/adminNotification.model");
+// const generateUniqueBillNo = require('../Utils/generateUniqueBillNo');
+// const changesmadeModel = require("../Models/changesmade.model");
+// const { uploadImageToS3 } = require("../Utils/s3upload");
+
+
+import jwt  from 'jsonwebtoken';
+import AccountantModel from './../Models/accountant.model.js';
+import bcrypt from "bcrypt"
+import { validateAccountant , validateAdmin} from '../Validation/validation.js';
+import StudentModel from '../Models/student.model.js';
+import generateUniqueBillNo from '../Utils/generateUniqueBillNo.js';
+// import ChangesMadeModel from './../Models/changesmade.model';
+import ExcelJS from "exceljs"
+import { uploadImageToS3 } from '../Utils/s3upload.js';
+import AdminNotificationModel from './../Models/adminNotification.model.js';
+import { generateTokens } from '../Utils/tokenUtils.js';
+import { parseExpiry } from '../Utils/stringToSeconds.js';
+import studentFeeColumns from '../Constants/constants.js';
+import DeletedAccountantCredentialsModel from '../Models/deletedAccountantCredentials.model.js';
 
 
 
@@ -227,7 +243,7 @@ const deleteAccountantCredential = async (req, res) => {
 const getNotifications = async (req, res) => {
     try {
 
-        let data = await adminNotificationModel.find()
+        let data = await AdminNotificationModel.find()
 
         if (!data.length) {
             return res.status(200).json({ message: "No notificatios received yet...", data, ok: true })
@@ -244,12 +260,12 @@ const getNotifications = async (req, res) => {
 const acceptNotification = async (req, res) => {
     try {
         let id = req.params.id
-        let isExists = await adminNotificationModel.findById(id)
+        let isExists = await AdminNotificationModel.findById(id)
 
         if (!isExists) {
             throw new Error("No such notification exists")
         }
-        let data = await adminNotificationModel.findByIdAndUpdate(isExists.id, { status: true }, { returnDocument: "after" })
+        let data = await AdminNotificationModel.findByIdAndUpdate(isExists.id, { status: true }, { returnDocument: "after" })
 
         if (!data.fields) {
             throw new Error("No fields to update in the notification");
@@ -289,7 +305,7 @@ const acceptNotification = async (req, res) => {
 
         let studentData = await StudentModel.findByIdAndUpdate(data.studentId, data.fields, { returnDocument: "after" })
 
-        await adminNotificationModel.findByIdAndDelete(id)
+        await AdminNotificationModel.findByIdAndDelete(id)
 
         res.status(200).json({ message: "accepted and updated successfully", data, ok: true })
 
@@ -303,14 +319,14 @@ const acceptNotification = async (req, res) => {
 const rejectNotification = async (req, res) => {
     try {
         let id = req.params.id
-        let isExists = await adminNotificationModel.findById(id)
+        let isExists = await AdminNotificationModel.findById(id)
 
         if (!isExists) {
             throw new Error("No such notification exists")
         }
 
-        let data = await adminNotificationModel.findByIdAndUpdate(id, { status: false }, { returnDocument: "after" })
-        await adminNotificationModel.findByIdAndDelete(id)
+        let data = await AdminNotificationModel.findByIdAndUpdate(id, { status: false }, { returnDocument: "after" })
+        await AdminNotificationModel.findByIdAndDelete(id)
 
         res.status(200).json({ message: "rejected update request", data, ok: true })
 
@@ -665,31 +681,60 @@ const uploadStudentImage = async (req, res) => {
   }
 };
 
-module.exports = {
+// module.exports = {
+//     adminLogin,
+//     refreshAccessToken,
+//     adminLogout,
+//     isAuthenticatedUser,
+//     getAdminRole,
+//     createAccountantCredential,
+//     getDeletedAccountantCredentials,
+//     deleteAccountantCredential,
+//     getNotifications,
+//     acceptNotification,
+//     rejectNotification,
+//     updateStudentAdmin,
+//     getStudentsList,
+//     getActiveAccountant,
+//     updatePermissionAccountant,
+//     changesMadeOnDate,
+//     changesRetrived,
+//     editStudentMandatoryDetails,
+//     editStudentNonMandatoryDetails,
+
+//     getTakenSRNo,
+//     generateTC,
+//     generateExcelFile,
+//     searchStudent,
+//     uploadStudentImage
+
+// }
+
+
+
+export {
     adminLogin,
-    refreshAccessToken,
-    adminLogout,
-    isAuthenticatedUser,
-    getAdminRole,
-    createAccountantCredential,
-    getDeletedAccountantCredentials,
-    deleteAccountantCredential,
-    getNotifications,
-    acceptNotification,
-    rejectNotification,
-    updateStudentAdmin,
-    getStudentsList,
-    getActiveAccountant,
-    updatePermissionAccountant,
-    changesMadeOnDate,
-    changesRetrived,
-    editStudentMandatoryDetails,
-    editStudentNonMandatoryDetails,
-
-    getTakenSRNo,
-    generateTC,
-    generateExcelFile,
-    searchStudent,
-    uploadStudentImage
-
+refreshAccessToken,
+adminLogout,
+isAuthenticatedUser,
+getAdminRole,
+createAccountantCredential,
+getDeletedAccountantCredentials,
+deleteAccountantCredential,
+getNotifications,
+acceptNotification,
+rejectNotification,
+updateStudentAdmin,
+getStudentsList,
+getActiveAccountant,
+updatePermissionAccountant,
+changesMadeOnDate,
+changesRetrived,
+editStudentMandatoryDetails,
+editStudentNonMandatoryDetails,
+getTakenSRNo,
+generateTC,
+generateExcelFile,
+searchStudent,
+uploadStudentImage
 }

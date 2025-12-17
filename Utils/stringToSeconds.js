@@ -6,6 +6,10 @@ const parseExpiry = (expiry) => {
     return timeValue; // Default (already in seconds)
   };
 
-module.exports = {
-    parseExpiry
+// module.exports = {
+//     parseExpiry
+// }
+
+export {
+  parseExpiry
 }

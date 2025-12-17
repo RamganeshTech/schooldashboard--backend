@@ -1,4 +1,5 @@
-const StudentModel = require('../Models/student.model')
+// const StudentModel = require('../Models/student.model')
+import StudentModel from './../Models/student.model.js';
 
 const generateUniqueBillNo = async (length = 5) => {
     let billNo;
@@ -60,4 +61,6 @@ const generateUniqueBillNo = async (length = 5) => {
 };
 
 
-module.exports = generateUniqueBillNo
+export default generateUniqueBillNo;
+
+// module.exports = generateUniqueBillNo

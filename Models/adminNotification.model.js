@@ -1,4 +1,6 @@
-const mongoose = require('mongoose')
+// const mongoose = require('mongoose')
+import mongoose from "mongoose";
+
 
 const AdminNotification = mongoose.Schema({
     email: {
@@ -29,4 +31,6 @@ const AdminNotification = mongoose.Schema({
     timestamps:true
 });
 
-module.exports = mongoose.model('AdminNotification', AdminNotification);
+// module.exports = mongoose.model('AdminNotification', AdminNotification);
+const AdminNotificationModel = mongoose.model("AdminNotification", AdminNotification )
+export default AdminNotificationModel;

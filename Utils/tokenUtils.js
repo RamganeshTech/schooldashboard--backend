@@ -1,6 +1,10 @@
-const jwt = require("jsonwebtoken");
-const dotenv = require("dotenv");
-const AccountantModel = require("../Models/accountant.model");
+// const jwt = require("jsonwebtoken");
+// const dotenv = require("dotenv");
+// const AccountantModel = require("../Models/accountant.model");
+
+import jwt from "jsonwebtoken"
+import dotenv from "dotenv";
+import AccountantModel from "../Models/accountant.model.js";
 
 dotenv.config();
 
@@ -52,4 +56,5 @@ const verifyRefreshToken = (token) => {
   }
 };
 
-module.exports = { generateTokens, verifyAccessToken, verifyRefreshToken };
+// module.exports = { generateTokens, verifyAccessToken, verifyRefreshToken };
+export {generateTokens, verifyAccessToken, verifyRefreshToken}

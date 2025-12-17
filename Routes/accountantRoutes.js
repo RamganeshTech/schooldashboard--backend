@@ -1,15 +1,35 @@
-const express = require('express')
+// const express = require('express')
+import express from 'express'
+import { upload } from '../Utils/s3upload.js';
 
-const router = express.Router()
 
-const {accountantLogin, accountantLogout, accountantRefreshAccessToken, getTakenSRNo, isAuthenticatedUser,
+
+// const {
+     
+//      accountantLogin, accountantLogout, accountantRefreshAccessToken, getTakenSRNo, isAuthenticatedUser,
+//      getAccountantRole, addStudent, getStudentsList, updateStudentWithPermission, updateStudentDirectly, 
+//      getPermissionStatus, changesMadeOnDate, changesRetrived, editStudentMandatoryDetails, 
+//      editStudentNonMandatoryDetails, generateExcelFile, searchStudent,
+//      uploadStudentImage
+
+// } = require('../Controllers/accountant.controller')
+
+import {
+     accountantLogin, accountantLogout, accountantRefreshAccessToken, getTakenSRNo, isAuthenticatedUser,
      getAccountantRole, addStudent, getStudentsList, updateStudentWithPermission, updateStudentDirectly, 
      getPermissionStatus, changesMadeOnDate, changesRetrived, editStudentMandatoryDetails, 
      editStudentNonMandatoryDetails, generateExcelFile, searchStudent,
-     uploadStudentImage} = require('../Controllers/accountant.controller')
+     uploadStudentImage
+     
+} from '../Controllers/accountant.controller.js'
 
-const { verifyAccountantMiddleware } = require('../Middleware/verifyTokenMiddleware')
-const { upload } = require('../Utils/s3upload')
+// const { verifyAccountantMiddleware } = require('../Middleware/verifyTokenMiddleware')
+import {verifyAccountantMiddleware} from '../Middleware/verifyTokenMiddleware.js'
+
+// const { upload } = require('../Utils/s3upload')
+// const { upload } = require('../Utils/s3upload')
+
+const router = express.Router()
 
 router.post('/accountantlogin', accountantLogin)
 router.post('/accountantlogout', accountantLogout)
@@ -38,4 +58,4 @@ router.get('/searchstudent', searchStudent)
 
 router.post('/student/uploadimage/:studentId', upload.single('file'), uploadStudentImage);
 
-module.exports = router
+export default router

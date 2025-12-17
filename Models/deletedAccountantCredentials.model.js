@@ -1,4 +1,6 @@
-const mongoose = require('mongoose')
+// const mongoose = require('mongoose')
+import mongoose from "mongoose";
+
 
 const DeletedAccountantCredentials = mongoose.Schema({
     email: {
@@ -21,4 +23,7 @@ const DeletedAccountantCredentials = mongoose.Schema({
 
 const DeletedAccountantCredentialsModel  = mongoose.model('DeletedCredentials', DeletedAccountantCredentials);
 
-module.exports = DeletedAccountantCredentialsModel;
+// module.exports = DeletedAccountantCredentialsModel;
+
+
+export default DeletedAccountantCredentialsModel;
