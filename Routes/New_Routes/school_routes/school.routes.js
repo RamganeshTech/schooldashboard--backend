@@ -15,7 +15,7 @@ schoolRoutes.get('/getall',
     getAllSchools);
 
 schoolRoutes.get('/getsingle/:id',
-     multiRoleAuth("correspondent","teacher", "principal", "admin", "viceprincipal",),
+     multiRoleAuth("correspondent","teacher", "principal", "administrator", "viceprincipal",),
     getSchoolById);
 
 schoolRoutes.put('/update/:id',
@@ -30,5 +30,7 @@ schoolRoutes.put('/updatelogo/:id',
 schoolRoutes.delete('/delete/:id',
     multiRoleAuth("correspondent"),
     deleteSchool);
+
+
 
 export default schoolRoutes;

@@ -6,8 +6,15 @@ const StudentSchema = mongoose.Schema({
         type: String, // Example: "SR-104"
         required: true,
         unique: true,
-        maxLength:[15, "SR-ID should contain only upto 15 digits"]
+        maxLength: [15, "SR-ID should contain only upto 15 digits"]
     },
+    // === CURRENT ACADEMIC LOCATION ===
+    classId: { type: mongoose.Schema.Types.ObjectId, ref: "ClassModel", default: null },
+
+    // Nullable (For LKG or if not assigned yet)
+    sectionId: { type: mongoose.Schema.Types.ObjectId, ref: "SectionModel", default: null },
+
+    isActive: { type: Boolean, default: true },
     newOld: {
         type: String,
         maxLength: [3, "New or Old column should contain only new or old"],
@@ -134,12 +141,12 @@ const StudentSchema = mongoose.Schema({
         default: null,
         match: [/^[0-9]+$/, "WhatsApp number should contain only numbers"]
     },
-    isTcIssued:{
-        type:Boolean,
-        default:false,
+    isTcIssued: {
+        type: Boolean,
+        default: false,
     },
-    studentImage:{
-         type:String,
+    studentImage: {
+        type: String,
     },
     mandatory: {
         gender: { type: String, default: null },

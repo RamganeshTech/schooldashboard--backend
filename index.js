@@ -23,6 +23,8 @@ import schoolRoutes from './Routes/New_Routes/school_routes/school.routes.js';
 import connectDB from './Config/ConnectDB.js';
 import userRoutes from './Routes/New_Routes/user_routes/user.routes.js';
 import classRoutes from './Routes/New_Routes/school_routes/class_routes/class.routes.js';
+import sectionRoutes from './Routes/New_Routes/school_routes/section_routes/section.routes.js';
+import teacherRoutes from './Routes/New_Routes/teacher_routes/teacher.routes.js';
 
 
 dotenv.config({ path: '.env.production' });
@@ -43,6 +45,8 @@ app.use('/api/accountant', accountantRoutes)
 app.use('/api/school', schoolRoutes)
 app.use('/api/user', userRoutes)
 app.use('/api/class', classRoutes)
+app.use('/api/section', sectionRoutes)
+app.use('/api/teacher', teacherRoutes)
 
 
 app.get("/api/health-check", (req, res) => {
@@ -57,6 +61,6 @@ let PORT = process.env.PORT || 4000
 
 connectDB().then(() => {
     app.listen(PORT, () => {
-        console.log(`Server running in the ${PORT}`)
+        console.log(`Server running in the http://locahost:${PORT}`)
     })
 }).catch(err => console.log(err.message))

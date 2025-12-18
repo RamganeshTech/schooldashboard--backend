@@ -2,12 +2,41 @@ import UserModel from "../../../Models/New_Model/UserModel/userModel.model.js";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { isValidEmail, isValidPhone } from "../../../Utils/basicValidation.js";
+import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model.js";
 
 const JWT_SECRET = process.env.JWT_SECRET // store in env
 
 export const createUser = async (req, res) => {
   try {
-    const { schoolId, email, userName, password, phoneNo, role, isPlatformAdmin = false } = req.body;
+    const { schoolCode, email, userName, password, phoneNo,
+      //  role, 
+      isPlatformAdmin = false } = req.body;
+
+
+    // const allowedRoles = ["correspondent", "teacher", "principal", "viceprincipal", "administrator", "parent", "accountant"]
+
+    // if(!allowedRoles.includes(role)){
+    //   return res.status(400).json({ ok: false, message: `role not allowed, only ${allowedRoles.join(", ")} are allowed` });
+
+    // }
+
+
+    if (!schoolCode) {
+      return res.status(400).json({ message: "schoolCode must be provided", ok: false });
+    }
+
+
+    let schoolId = null;
+    if (schoolCode) {
+      const isExist = await SchoolModel.findOne({ schoolCode });
+
+      if (!isExist) {
+        return res.status(400).json({ message: "schoolCode is not valid", ok: false });
+      }
+
+      schoolId = isExist._id
+    }
+
 
     // Validate required fields
     if (!phoneNo) {
@@ -17,13 +46,6 @@ export const createUser = async (req, res) => {
     // if (phoneNo?.length !== 10) {
     //   return res.status(400).json({ ok: false, message: "phoneNo should be 10 digits" });
     // }
-
-
-    if (!schoolId) {
-      return res.status(400).json({ message: "schoolId must be provided", ok: false });
-
-    }
-
 
     if (phoneNo && !isValidPhone(phoneNo)) {
       return res.status(400).json({ message: "Invalid phone number format", ok: false });
@@ -58,18 +80,85 @@ export const createUser = async (req, res) => {
       return res.status(400).json({ message: "Email or phoneno is already in use", ok: false });
     }
 
+    // ==========================================
+    // 3. TEACHER SPECIFIC VALIDATION (The Logic You Asked For)
+    // ==========================================
+    // let validAssignments = [];
+
+    // // Only process assignments if the role is actually a Teacher
+    // if (role.toLowerCase() === "teacher" && assignments.length > 0) {
+
+    //   // Loop through each assignment sent from frontend
+    //   for (const item of assignments) {
+    //     // A. Validate Class
+    //     if (!mongoose.Types.ObjectId.isValid(item.classId)) {
+    //       return res.status(400).json({ ok: false, message: `Invalid Class ID: ${item.classId}` });
+    //     }
+
+    //     const classDoc = await ClassModel.findById(item.classId);
+    //     if (!classDoc) {
+    //       return res.status(404).json({ ok: false, message: `Class not found for ID: ${item.classId}` });
+    //     }
+
+    //     // Security: Ensure Class belongs to the same school
+    //     if (classDoc.schoolId.toString() !== schoolId) {
+    //       return res.status(400).json({ ok: false, message: "Cannot assign class from a different school" });
+    //     }
+
+    //     // B. Handle Sections logic
+    //     let finalSectionId = null;
+
+    //     if (classDoc.hasSections) {
+    //       // If class HAS sections (e.g. Grade 10), sectionId is REQUIRED
+    //       if (!item.sectionId || !mongoose.Types.ObjectId.isValid(item.sectionId)) {
+    //         return res.status(400).json({ 
+    //           ok: false, 
+    //           message: `Class '${classDoc.name}' has sections. You must provide a valid sectionId.` 
+    //         });
+    //       }
+
+    //       const sectionDoc = await SectionModel.findById(item.sectionId);
+    //       if (!sectionDoc) {
+    //          return res.status(404).json({ ok: false, message: `Section not found for ID: ${item.sectionId}` });
+    //       }
+
+    //       // Security: Ensure Section belongs to that Class
+    //       if (sectionDoc.classId.toString() !== item.classId) {
+    //          return res.status(400).json({ ok: false, message: "Section does not belong to the selected Class" });
+    //       }
+
+    //       finalSectionId = item.sectionId;
+
+    //     } else {
+    //       // If class has NO sections (e.g. LKG), sectionId must be ignored/null
+    //       finalSectionId = null; 
+    //     }
+
+    //     // Add to valid list
+    //     validAssignments.push({
+    //       classId: item.classId,
+    //       sectionId: finalSectionId
+    //     });
+    //   }
+    // }
+
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Normalize role to lowercase for checking
+    // const isTeacher = role.toLowerCase() === "teacher";
     // Prepare user data
     const userData = {
       userName,
       password: hashedPassword,
-      role,
+      role: null,
       phoneNo,
       email,
+      schoolCode: schoolCode,
       schoolId: schoolId,
+
+      // ...(isTeacher && { assignments: [] }), // only store if true
       ...(isPlatformAdmin ? { isPlatformAdmin: true } : {}) // only store if true
     };
 
@@ -229,19 +318,19 @@ export const deleteUser = async (req, res) => {
     const isPA = await UserModel.findById(id);
 
 
-    if(isPA?.isPlatformAdmin){
+    if (isPA?.isPlatformAdmin) {
       return res.status(404).json({ ok: false, message: "Platform admin cannot be deleted" });
     }
 
     const isExist = await UserModel.findByIdAndDelete(id);
 
-    
+
 
     if (!isExist) {
       return res.status(404).json({ ok: false, message: "User not found" });
     }
 
-    
+
 
     return res.status(201).json({
       message: "User deleted successfully",
@@ -338,6 +427,52 @@ export const updateUser = async (req, res) => {
     if (err.code === 11000) {
       return res.status(400).json({ message: "Duplicate field value entered", ok: false });
     }
+    return res.status(500).json({ ok: false, message: "Server error", error: err.message });
+  }
+};
+
+
+
+
+
+export const assignRolesToUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    let { role } = req.body;
+
+
+    if (!userId) {
+      return res.status(400).json({ ok: false, message: "userId is missing" });
+    }
+
+
+    const allowedRoles = ["correspondent", "teacher", "principal", "viceprincipal", "administrator", "parent", "accountant"]
+
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({ ok: false, message: `role not allowed, only ${allowedRoles.join(", ")} are allowed` });
+
+    }
+
+
+    // 5. Perform Update
+    const updatedUser = await UserModel.findByIdAndUpdate(id, { role: role }, {
+      new: true, // Return the updated document
+      runValidators: true
+    }).select("-password"); // Do not return the password
+
+    if (!updatedUser) {
+      return res.status(404).json({ ok: false, message: "User not found" });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      message: "User role updated successfully",
+      user: updatedUser,
+    });
+
+  } catch (err) {
+    console.error("Error updating user:", err);
+    
     return res.status(500).json({ ok: false, message: "Server error", error: err.message });
   }
 };

@@ -1,0 +1,256 @@
+// import UserModel from "../models/UserModel.js";
+// import ClassModel from "../models/ClassModel.js";
+// import SectionModel from "../models/SectionModel.js";
+import mongoose from "mongoose";
+import UserModel from "../../../Models/New_Model/UserModel/userModel.model.js";
+import ClassModel from "../../../Models/New_Model/SchoolModel/classModel.model.js";
+import SectionModel from "../../../Models/New_Model/SchoolModel/section.model.js";
+
+// ==========================================
+// MANAGE TEACHER ASSIGNMENTS
+// Handles: Single Add, Single Remove, Bulk Select All, Bulk Deselect All
+// ==========================================
+export const manageTeacherAssignments = async (req, res) => {
+  try {
+    const { teacherId, updates } = req.body;
+    // updates example: [ { classId: "123" }, { classId: "456", sectionId: "789" } ]
+
+    // 1. Basic Validation
+    if (!teacherId || !Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({ ok: false, message: "teacherId and updates array are required" });
+    }
+
+    const teacher = await UserModel.findById(teacherId);
+    if (!teacher || teacher.role.toLowerCase() !== "teacher") {
+      return res.status(404).json({ ok: false, message: "Teacher not found" });
+    }
+
+    // We modify a copy of the assignments array
+    let currentAssignments = [...(teacher.assignments || [])];
+    let errors = [];
+
+    for (const update of updates) {
+      const { classId, sectionId } = update;
+
+      if (!mongoose.Types.ObjectId.isValid(classId)) {
+        errors.push(`Invalid Class ID: ${classId}`);
+        continue;
+      }
+
+      const classDoc = await ClassModel.findById(classId);
+      if (!classDoc) {
+        errors.push(`Class not found: ${classId}`);
+        continue;
+      }
+
+      // =========================================================
+      // SCENARIO A: BULK ACTION (Only Class ID provided)
+      // Logic: If teacher has ANY assignment for this class -> Remove All.
+      //        If teacher has NO assignment for this class -> Add All Sections.
+      // =========================================================
+      if (!sectionId) {
+        
+        const hasAssignmentsForClass = currentAssignments.some(
+          (asg) => asg.classId.toString() === classId
+        );
+
+        if (hasAssignmentsForClass) {
+          // >>> DESELECT ALL (Scenario 3: Remove All Grade 10)
+          currentAssignments = currentAssignments.filter(
+            (asg) => asg.classId.toString() !== classId
+          );
+        } else {
+          // >>> SELECT ALL (Scenario: Add All Grade 10)
+          
+          if (classDoc.hasSections) {
+            // Fetch all sections for this class from DB
+            const allSections = await SectionModel.find({ classId: classId });
+            
+            if (allSections.length === 0) {
+               errors.push(`Class ${classDoc.name} has no sections to assign.`);
+            }
+
+            // Add every section
+            allSections.forEach(sec => {
+              currentAssignments.push({
+                classId: classId,
+                sectionId: sec._id
+              });
+            });
+          } else {
+            // For LKG (No sections), just add the class
+            currentAssignments.push({
+              classId: classId,
+              sectionId: null
+            });
+          }
+        }
+        continue; // Move to next update item
+      }
+
+      // =========================================================
+      // SCENARIO B: SINGLE SECTION TOGGLE
+      // Logic: If exists -> Remove. If missing -> Add.
+      // =========================================================
+      
+      // Validate Section ID if class has sections
+      let targetSectionId = null;
+      if (classDoc.hasSections) {
+        if (!mongoose.Types.ObjectId.isValid(sectionId)) {
+          errors.push(`Invalid Section ID for class ${classDoc.name}`);
+          continue;
+        }
+        // Optional: strict check if section belongs to class
+        // const secCheck = await SectionModel.findById(sectionId);
+        // if(secCheck.classId.toString() !== classId) continue; 
+        
+        targetSectionId = sectionId;
+      }
+
+      // Check if this specific pair exists
+      const existingIndex = currentAssignments.findIndex((asg) => {
+        return asg.classId.toString() === classId && 
+               String(asg.sectionId) === String(targetSectionId);
+      });
+
+      if (existingIndex !== -1) {
+        // >>> EXISTS: REMOVE IT (Scenario 1)
+        currentAssignments.splice(existingIndex, 1);
+      } else {
+        // >>> MISSING: ADD IT (Scenario 2)
+        currentAssignments.push({
+          classId: classId,
+          sectionId: targetSectionId
+        });
+      }
+    }
+
+    // 3. Save Changes
+    if (errors.length > 0) {
+      return res.status(400).json({ ok: false, message: "Validation errors", errors });
+    }
+
+    teacher.assignments = currentAssignments;
+    await teacher.save();
+
+    return res.status(200).json({
+      ok: true,
+      message: "Assignments updated successfully",
+      assignments: teacher.assignments
+    });
+
+  } catch (error) {
+    console.error("Manage Assignments Error:", error);
+    return res.status(500).json({ ok: false, message: "Internal server error" });
+  }
+};
+
+
+
+
+
+
+
+//  Endpoint: POST /api/users/assignments/manage
+// Behavior: This API works like a Toggle Switch. It does not "set" data; it flips the state (On -> Off, Off -> On).
+
+// Common Payload Structure:
+// JSON
+
+// {
+//   "teacherId": "REPLACE_WITH_TEACHER_ID",
+//   "updates": [
+//      // List of changes to apply
+//   ]
+// }
+// Scenario 1: Single Checkbox (Add a Section)
+// Context: The teacher is NOT currently assigned to Grade 10 - Section A.
+// Action: Frontend sends the specific Class and Section ID.
+// Result: The system ADDS this assignment.
+// Payload:
+
+// JSON
+
+// {
+//   "teacherId": "TEACHER_ID",
+//   "updates": [
+//     { 
+//       "classId": "GRADE_10_ID", 
+//       "sectionId": "SECTION_A_ID" 
+//     }
+//   ]
+// }
+// Scenario 2: Single Checkbox (Remove a Section)
+// Context: The teacher IS ALREADY assigned to Grade 10 - Section A.
+// Action: Frontend sends the exact same payload as Scenario 1.
+// Result: The system detects it exists and REMOVES it.
+// Payload:
+
+// JSON
+
+// {
+//   "teacherId": "TEACHER_ID",
+//   "updates": [
+//     { 
+//       "classId": "GRADE_10_ID", 
+//       "sectionId": "SECTION_A_ID" 
+//     }
+//   ]
+// }
+// Scenario 3: "Select All" (Bulk Add Class)
+// Context: The teacher has ZERO assignments for Grade 10.
+// Action: Frontend sends only the classId (Do NOT send sectionId).
+// Result: The system fetches all sections (A, B, C...) for Grade 10 and ADDS THEM ALL.
+// Payload:
+
+// JSON
+
+// {
+//   "teacherId": "TEACHER_ID",
+//   "updates": [
+//     { 
+//       "classId": "GRADE_10_ID" 
+//       // Notice: No sectionId here
+//     }
+//   ]
+// }
+// Scenario 4: "Deselect All" (Bulk Remove Class)
+// Context: The teacher has SOME or ALL assignments for Grade 10 (e.g., they teach 10-A and 10-B).
+// Action: Frontend sends only the classId (Same payload as Scenario 3).
+// Result: The system detects the teacher has assignments for this class and REMOVES EVERYTHING related to Grade 10.
+// Payload:
+
+// JSON
+
+// {
+//   "teacherId": "TEACHER_ID",
+//   "updates": [
+//     { 
+//       "classId": "GRADE_10_ID" 
+//     }
+//   ]
+// }
+// Scenario 5: Multi-Select (The "Save" Button)
+// Context: The Principal clicks multiple checkboxes on the UI and hits "Save Changes".
+// Clicks "LKG" (Teacher didn't have it -> Select All).
+// Unchecks "Grade 10 - A" (Teacher had it -> Remove).
+// Checks "Grade 5 - B" (Teacher didn't have it -> Add).
+// Action: Send all changes in one array.
+// Result: System processes them sequentially.
+// Payload:
+
+// JSON
+
+// {
+//   "teacherId": "TEACHER_ID",
+//   "updates": [
+//     { "classId": "LKG_ID" },                          // Logic: Add LKG
+//     { "classId": "GRADE_10_ID", "sectionId": "SEC_A_ID" }, // Logic: Remove 10-A
+//     { "classId": "GRADE_5_ID", "sectionId": "SEC_B_ID" }   // Logic: Add 5-B
+//   ]
+// }
+
+
+
+
+
