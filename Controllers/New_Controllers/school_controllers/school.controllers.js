@@ -17,13 +17,18 @@ export const createSchool = async (req, res) => {
     }
 
 
-    let { name, email, phoneNo, address } = req.body;
+    let { name, email, phoneNo, address, currentAcademicYear } = req.body;
+
+    
+
     const file = req.file; // ✅ multer puts file here
 
     name = name?.trim();
     email = email?.trim();
     phoneNo = phoneNo?.trim();
     address = address?.trim();
+    currentAcademicYear = currentAcademicYear?.trim();
+
 
 
     console.log("file 11111111", file)
@@ -38,6 +43,11 @@ export const createSchool = async (req, res) => {
     // Validation: Ensure Name is provided
     if (!name) {
       return res.status(400).json({ message: "School Name is required.",ok:false });
+    }
+
+    if(!currentAcademicYear){
+      return res.status(400).json({ message: "Current academic year is required.",ok:false });
+      
     }
 
 
@@ -157,7 +167,7 @@ export const getSchoolById = async (req, res) => {
 export const updateSchool = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, phoneNo, address } = req.body;
+    const { name, email, phoneNo, address, currentAcademicYear } = req.body;
 
 
     const updates = {};
@@ -166,6 +176,11 @@ export const updateSchool = async (req, res) => {
     if (email) updates.email = email.trim();
     if (phoneNo) updates.phoneNo = phoneNo.trim();
     if (address) updates.address = address.trim();
+    if (currentAcademicYear) updates.currentAcademicYear = currentAcademicYear.trim();
+
+    if(!currentAcademicYear){
+      return res.status(400).json({ message: "Current Academic year cannot be null", ok: false });
+    }
 
     // Prevent schoolCode updates
     if (req.body.schoolCode) {

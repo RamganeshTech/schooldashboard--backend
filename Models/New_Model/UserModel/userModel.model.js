@@ -24,6 +24,7 @@ const userSchema = new Schema(
 
     // only for teachers
     assignments: { type: [assignmentSchema] },
+    studentId: { type: [mongoose.Schema.ObjectId] }
 
   },
   { timestamps: true }

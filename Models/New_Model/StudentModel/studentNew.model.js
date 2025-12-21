@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 
 const uploadSchema = new Schema({
@@ -12,22 +12,13 @@ const uploadSchema = new Schema({
 const StudentNewSchema = mongoose.Schema({
     // === MULTI-TENANCY ===
     schoolId: { type: mongoose.Schema.Types.ObjectId, ref: "SchoolModel", required: true },
-
-    // === UNIQUE IDENTIFIER ===
-    srId: { 
-        type: String, 
-        required: true,
-        }, 
-
+    srId: {
+        type: String,
+    },
     // === BASIC INFO (Unchangeable/Static) ===
-    studentName: { type: String, required: true,  },
-    gender: { type: String, default: null },
-    dob: { type: Date, default: null }, // Keeping as String based on your preference, or Date
-    whatsappNumber: { type: String, default: null },
+    studentName: { type: String, required: true, },
     studentImage: { type: uploadSchema, default: null },
 
-    // === CACHE LOCATION (Optional but Recommended) ===
-    // This tells us where they are "Right Now" without digging into history records
     currentClassId: { type: mongoose.Schema.Types.ObjectId, ref: "ClassModel", default: null },
     currentSectionId: { type: mongoose.Schema.Types.ObjectId, ref: "SectionModel", default: null },
 
@@ -103,6 +94,48 @@ const StudentNewSchema = mongoose.Schema({
 
 // CONSTRAINT: SR-ID must be unique per School
 // StudentNewSchema.index({ schoolId: 1, srId: 1 }, { unique: true });
+
+StudentNewSchema.pre("save", async function (next) {
+    // 1. Only run this if we are creating a NEW student
+    // This prevents srId from changing during updates
+    if (!this.isNew) {
+        return next();
+    }
+
+    try {
+        // 2. Find the last created student FOR THIS SCHOOL only
+        const lastStudent = await mongoose.model("StudentNewModel").findOne(
+            {},
+            { srId: 1 },
+            { sort: { createdAt: -1 } } // Get latest
+        );
+
+        let nextSequence = 1;
+
+        if (lastStudent && lastStudent.srId) {
+            // Format is SR-001 or SR-1000
+            const parts = lastStudent.srId.split("-"); // ["SR", "001"]
+            if (parts.length === 2) {
+                const lastNum = parseInt(parts[1], 10);
+                if (!isNaN(lastNum)) {
+                    nextSequence = lastNum + 1;
+                }
+            }
+        }
+
+        // 3. Format the Sequence (Pad with 0s if less than 1000)
+        // 1 -> "001", 99 -> "099", 100 -> "100", 1000 -> "1000"
+        const sequenceString = nextSequence < 1000
+            ? String(nextSequence).padStart(3, "0")
+            : String(nextSequence);
+
+        this.srId = `SR-${sequenceString}`;
+
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
 
 const StudentNewModel = mongoose.model('StudentNewModel', StudentNewSchema);
 export default StudentNewModel;

@@ -20,6 +20,7 @@ const schoolSchema = new Schema(
         email: { type: String, },
         phoneNo: { type: String },
         address: { type: String },
+        currentAcademicYear: { type: String, default: null },
 
         // Optional: Logo or branding
         logo: {

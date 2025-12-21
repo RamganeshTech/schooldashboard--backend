@@ -1,0 +1,116 @@
+// import FeeStructureModel from "../models/FeeStructureModel.js";
+// import ClassModel from "../models/ClassModel.js";
+// import mongoose from "mongoose";
+import FeeStructureModel from "../../../Models/New_Model/FeeStructureModel/FeeStructure.model.js";
+// import ClassModel from './../../../Models/New_Model/SchoolModel/classModel.model.js';
+
+// ==========================================
+// SET / UPDATE FEE STRUCTURE
+// ==========================================
+export const setFeeStructure = async (req, res) => {
+  try {
+    const { schoolId, classId, feeHead } = req.body;
+
+    // 1. Basic Validation
+    if (!schoolId || !classId || !feeHead) {
+      return res.status(400).json({ ok: false, message: "schoolId, classId, and feeHead are required" });
+    }
+
+
+    // // 2. Validate Class Exists
+    // const classDoc = await ClassModel.findById(classId);
+    // if (!classDoc) {
+    //   return res.status(404).json({ ok: false, message: "Class not found" });
+    // }
+
+    // 3. Auto-Calculate Total Amount
+    // This sums up all the values inside feeHead
+    // const totalAmount = Object.values(feeHead).reduce((acc, val) => acc + (Number(val) || 0), 0);
+
+
+    
+    // 1. Calculate Total Academic Fee
+    // Rule: Total = Admission + 1st Term + 2nd Term
+    const totalAcademicFee = 
+      (Number(feeHead.admissionFee) || 0) +
+      (Number(feeHead.firstTermAmt) || 0) +
+      (Number(feeHead.secondTermAmt) || 0) +
+      (Number(feeHead.busFirstTermAmt) || 0) +
+      (Number(feeHead.busSecondTermAmt) || 0);
+
+
+
+    // 4. Upsert (Update if exists, Create if new)
+    // Filter: find by schoolId AND classId
+        const updatedFee = await FeeStructureModel.findOneAndUpdate(
+      { schoolId, classId },
+      {
+        $set: {
+          feeHead: {
+            admissionFee: feeHead.admissionFee,
+            firstTermAmt: feeHead.firstTermAmt,
+            secondTermAmt: feeHead.secondTermAmt,
+            busFirstTermAmt: feeHead.busFirstTermAmt,
+            busSecondTermAmt: feeHead.busSecondTermAmt
+          },
+          totalAmount: totalAcademicFee
+        }
+      },
+      { new: true, upsert: true, runValidators: true }
+    );
+
+    return res.status(200).json({
+      ok: true,
+      message: `Fee structure updated successfully`,
+      data: updatedFee
+    });
+
+  } catch (error) {
+    console.error("Set Fee Error:", error);
+    return res.status(500).json({ ok: false, message: "Internal server error", error: error.message });
+  }
+};
+
+// ==========================================
+// GET FEE STRUCTURE (By Class)
+// ==========================================
+export const getFeeStructureByClass = async (req, res) => {
+  try {
+    const { schoolId, classId } = req.query;
+
+    if (!schoolId || !classId) {
+      return res.status(400).json({ ok: false, message: "schoolId and classId are required" });
+    }
+
+    const feeStructure = await FeeStructureModel.findOne({ schoolId, classId });
+
+    if (!feeStructure) {
+      // If no structure exists, return 0s so frontend doesn't break
+      // This is better than a 404 error for the UI
+      return res.status(200).json({
+        ok: true,
+        message: "No fee structure found, returning default",
+        data: {
+          feeHead: {
+            admissionFee: 0,
+            firstTermAmt: 0,
+            secondTermAmt: 0,
+            annualFee: 0,
+            busFirstTermAmt: 0,
+            busSecondTermAmt: 0
+          },
+          totalAmount: 0
+        }
+      });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      data: feeStructure
+    });
+
+  } catch (error) {
+    console.error("Get Fee Error:", error);
+    return res.status(500).json({ ok: false, message: "Internal server error" });
+  }
+};
