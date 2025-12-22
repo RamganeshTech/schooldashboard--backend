@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import SectionModel from "../../../../Models/New_Model/SchoolModel/section.model.js";
 import ClassModel from "../../../../Models/New_Model/SchoolModel/classModel.model.js";
 import UserModel from "../../../../Models/New_Model/UserModel/userModel.model.js";
+import { archiveData } from "../../deleteArchieve_controller/deleteArchieve.controller.js";
 
 // ============================
 // 1. GET SECTIONS
@@ -263,6 +264,16 @@ export const deleteSection = async (req, res) => {
                 hasSections: false
             });
         }
+
+
+        await archiveData({
+            schoolId: deletedSection.schoolId,
+            category: "section",
+            originalId: deletedSection._id,
+            deletedData: deletedSection.toObject(), // Convert Mongoose doc to plain object
+            deletedBy: req.user._id || null,
+            reason: null, // Optional reason from body
+        });
 
         return res.status(200).json({ ok: true, message: "Section deleted successfully" });
     } catch (error) {

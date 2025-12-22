@@ -33,6 +33,7 @@ import downloadRoutes from './Routes/New_Routes/download_routes/download.routes.
 import expenseRoutes from './Routes/New_Routes/expense_routes/expense.routes.js';
 import deleteArchiveRoutes from './Routes/New_Routes/deleteArchive_routes/deleteArchieve.routes.js';
 import financeRoutes from './Routes/New_Routes/financeLedger_routes/financeLedger.routes.js';
+import annoucementRoutes from './Routes/New_Routes/announcement_routes/annoucement.routes.js';
 
 
 dotenv.config({ path: '.env.production' });
@@ -61,10 +62,17 @@ app.use('/api/studentrecord', studentRecordRoutes)
 app.use('/api/attendance', attendanceRoutes)
 
 app.use('/api/expense', expenseRoutes)
+
+// not mentioned in the docuemntation
 app.use('/api/financeledger', financeRoutes)
 app.use('/api/deletearchive', deleteArchiveRoutes)
+// not mentioned in the docuemntation
+
+app.use('/api/announcement', annoucementRoutes)
 
 app.use('/api/download', downloadRoutes)
+
+// app.use("/api/feereceipt")
 
 
 app.get("/api/health-check", (req, res) => {

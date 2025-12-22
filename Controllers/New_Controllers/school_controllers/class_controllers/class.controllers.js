@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 // import UserModel from "../../../../Models/New_Model/UserModel/userModel.model";
 import UserModel from "../../../../Models/New_Model/UserModel/userModel.model.js";
 import ClassModel from "../../../../Models/New_Model/SchoolModel/classModel.model.js";
+import { archiveData } from "../../deleteArchieve_controller/deleteArchieve.controller.js";
 
 // ============================
 // GET CLASSES
@@ -12,7 +13,7 @@ export const getClasses = async (req, res) => {
     try {
         const { schoolId } = req.params;
 
-        const classes = await ClassModel.find({schoolId}).populate("classTeacherId", "userName email")
+        const classes = await ClassModel.find({ schoolId }).populate("classTeacherId", "userName email")
             .sort({ order: 1 }); // IMPORTANT: Sort by order (LKG, UKG, 1, 2...)
 
         return res.status(200).json({ ok: true, data: classes });
@@ -27,8 +28,8 @@ export const getClasses = async (req, res) => {
 // ============================
 export const createClass = async (req, res) => {
     try {
-        const {  name, order = 0, hasSections = false, classTeacherId = null } = req.body;
-        const {schoolId} = req.params
+        const { name, order = 0, hasSections = false, classTeacherId = null } = req.body;
+        const { schoolId } = req.params
 
         // Auto-detect schoolId from logged-in user (Best Practice)
         // const schoolId = req.user?.schoolId || req.body.schoolId;
@@ -156,6 +157,16 @@ export const deleteClass = async (req, res) => {
         if (!deleted) {
             return res.status(404).json({ ok: false, message: "Class not found" });
         }
+
+        await archiveData({
+            schoolId: deleted.schoolId,
+            category: "class",
+            originalId: deleted._id,
+            deletedData: deleted.toObject(), // Convert Mongoose doc to plain object
+            deletedBy: req.user._id || null,
+            reason: null, // Optional reason from body
+        });
+
 
         return res.status(200).json({ ok: true, message: "Class deleted successfully" });
     } catch (error) {

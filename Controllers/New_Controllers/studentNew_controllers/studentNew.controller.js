@@ -5,6 +5,7 @@
 import StudentNewModel from "../../../Models/New_Model/StudentModel/studentNew.model.js";
 import UserModel from "../../../Models/New_Model/UserModel/userModel.model.js";
 import { uploadImageToS3 } from "../../../Utils/s3upload.js";
+import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
 
 // ==========================================
 export const createStudentProfile = async (req, res) => {
@@ -212,6 +213,18 @@ export const deleteStudent = async (req, res) => {
         if (!deletedStudent) {
             return res.status(404).json({ ok: false, message: "Student not found" });
         }
+
+
+        // 2. CALL THE ARCHIVE UTILITY
+        await archiveData({
+            schoolId: deletedStudent?.schoolId,
+            category: "student",
+            originalId: updated._id,
+            deletedData: updated.toObject(), // Convert Mongoose doc to plain object
+            deletedBy: req.user._id || null,
+            reason: null, // Optional reason from body
+        });
+
 
         // TODO: Ideally, you should also delete related FeeRecords here to clean up.
         // await StudentRecordModel.deleteMany({ studentId: id });

@@ -5,6 +5,7 @@
 import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model.js";
 import { isValidEmail, isValidPhone } from "../../../Utils/basicValidation.js";
 import { uploadImageToS3 } from "../../../Utils/s3upload.js";
+import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
 
 // ==========================================
 export const createSchool = async (req, res) => {
@@ -19,7 +20,7 @@ export const createSchool = async (req, res) => {
 
     let { name, email, phoneNo, address, currentAcademicYear } = req.body;
 
-    
+
 
     const file = req.file; // ✅ multer puts file here
 
@@ -42,12 +43,12 @@ export const createSchool = async (req, res) => {
 
     // Validation: Ensure Name is provided
     if (!name) {
-      return res.status(400).json({ message: "School Name is required.",ok:false });
+      return res.status(400).json({ message: "School Name is required.", ok: false });
     }
 
-    if(!currentAcademicYear){
-      return res.status(400).json({ message: "Current academic year is required.",ok:false });
-      
+    if (!currentAcademicYear) {
+      return res.status(400).json({ message: "Current academic year is required.", ok: false });
+
     }
 
 
@@ -114,11 +115,11 @@ export const createSchool = async (req, res) => {
     return res.status(201).json({
       message: "School created successfully",
       data: newSchool,
-      ok:true
+      ok: true
     });
   } catch (error) {
     console.error("Error creating school:", error);
-    return res.status(500).json({ message: "Internal Server Error", error: error.message, ok:false });
+    return res.status(500).json({ message: "Internal Server Error", error: error.message, ok: false });
   }
 };
 
@@ -151,13 +152,13 @@ export const getSchoolById = async (req, res) => {
     const school = await SchoolModel.findById(id);
 
     if (!school) {
-      return res.status(404).json({ message: "School not found.", ok:false });
+      return res.status(404).json({ message: "School not found.", ok: false });
     }
 
     return res.status(200).json({ ok: true, data: school });
   } catch (error) {
     console.error("Error fetching school:", error);
-    return res.status(500).json({ message: "Internal Server Error", error: error.message, ok:false });
+    return res.status(500).json({ message: "Internal Server Error", error: error.message, ok: false });
   }
 };
 
@@ -178,7 +179,7 @@ export const updateSchool = async (req, res) => {
     if (address) updates.address = address.trim();
     if (currentAcademicYear) updates.currentAcademicYear = currentAcademicYear.trim();
 
-    if(!currentAcademicYear){
+    if (!currentAcademicYear) {
       return res.status(400).json({ message: "Current Academic year cannot be null", ok: false });
     }
 
@@ -258,7 +259,7 @@ export const updateSchool = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating school:", error);
-    return res.status(500).json({ message: "Internal Server Error", error: error.message, ok:false });
+    return res.status(500).json({ message: "Internal Server Error", error: error.message, ok: false });
   }
 };
 
@@ -300,11 +301,11 @@ export const updateSchoolLogo = async (req, res) => {
     return res.status(200).json({
       message: "School logo updated successfully",
       data: updatedSchool,
-      ok:false
+      ok: false
     });
   } catch (error) {
     console.error("Error updating school:", error);
-    return res.status(500).json({ message: "Internal Server Error", error: error.message,ok:false });
+    return res.status(500).json({ message: "Internal Server Error", error: error.message, ok: false });
   }
 };
 
@@ -322,16 +323,26 @@ export const deleteSchool = async (req, res) => {
     const school = await SchoolModel.findByIdAndDelete(id);
 
     if (!school) {
-      return res.status(404).json({ message: "School not found.", ok:false });
+      return res.status(404).json({ message: "School not found.", ok: false });
     }
+
+
+    await archiveData({
+      schoolId: school._id,
+      category: "school",
+      originalId: school._id,
+      deletedData: school.toObject(), // Convert Mongoose doc to plain object
+      deletedBy: req.user._id || null,
+      reason: null, // Optional reason from body
+    });
 
     // Note: In an LMS, usually we prefer "Soft Delete" (setting isActive: false)
     // to preserve history. If you want that, replace the line above with:
     // await SchoolModel.findByIdAndUpdate(id, { isActive: false });
 
-    return res.status(200).json({ message: "School deleted successfully.", ok:false });
+    return res.status(200).json({ message: "School deleted successfully.", ok: false });
   } catch (error) {
     console.error("Error deleting school:", error);
-    return res.status(500).json({ message: "Internal Server Error", error: error.message , ok:false});
+    return res.status(500).json({ message: "Internal Server Error", error: error.message, ok: false });
   }
 };

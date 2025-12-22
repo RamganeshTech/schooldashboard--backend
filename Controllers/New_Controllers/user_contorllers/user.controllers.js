@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { isValidEmail, isValidPhone } from "../../../Utils/basicValidation.js";
 import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model.js";
+import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
 
 const JWT_SECRET = process.env.JWT_SECRET // store in env
 
@@ -330,7 +331,16 @@ export const deleteUser = async (req, res) => {
       return res.status(404).json({ ok: false, message: "User not found" });
     }
 
-
+    if (isExist?.schoolId) {
+      await archiveData({
+        schoolId: isExist.schoolId,
+        category: "user",
+        originalId: isExist._id,
+        deletedData: isExist.toObject(), // Convert Mongoose doc to plain object
+        deletedBy: req.user._id || null,
+        reason: null, // Optional reason from body
+      });
+    }
 
     return res.status(201).json({
       message: "User deleted successfully",
@@ -472,7 +482,7 @@ export const assignRolesToUser = async (req, res) => {
 
   } catch (err) {
     console.error("Error updating user:", err);
-    
+
     return res.status(500).json({ ok: false, message: "Server error", error: err.message });
   }
 };

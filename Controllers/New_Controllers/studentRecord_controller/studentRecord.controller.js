@@ -9,6 +9,7 @@ import SectionModel from "../../../Models/New_Model/SchoolModel/section.model.js
 import { uploadImageToS3 } from "../../../Utils/s3upload.js";
 import { uploadFileToS3New } from "../../../Utils/s4UploadsNew.js";
 import { createLedgerEntry } from "../financeLedger_controller/financeLedger.controller.js";
+import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
 
 // Helper: Generate Receipt Number (REC-YYYY-0001)
 const generateReceiptNo = async (schoolId, session) => {
@@ -425,7 +426,7 @@ export const collectFeeAndManageRecord = async (req, res) => {
             // }], { session });
 
 
-             // --- CHANGED FROM .create() TO new Model() ---
+            // --- CHANGED FROM .create() TO new Model() ---
             const newReceiptEntry = new FeeTransactionModel({
                 schoolId,
                 studentId,
@@ -448,14 +449,14 @@ export const collectFeeAndManageRecord = async (req, res) => {
             });
 
             // Save using the session
-            receipt = await newReceiptEntry.save({ session }); 
+            receipt = await newReceiptEntry.save({ session });
             // Now 'receipt' is a single Object. You can use receipt._id
 
-            
+
             // ---------------------------------------------------------
             // 10. FINANCE LEDGER INTEGRATION (Money In)
             // ---------------------------------------------------------
-            
+
             // Note: Since createLedgerEntry doesn't natively support Mongoose Sessions in the Helper I gave,
             // we should technically pass 'session' to it, or just await it here.
             // Since your helper uses .save(), it might be outside the transaction scope unless updated.
@@ -501,6 +502,115 @@ export const collectFeeAndManageRecord = async (req, res) => {
         await session.abortTransaction();
         session.endSession();
         console.error("Collection Error:", error);
+        return res.status(500).json({ ok: false, message: error.message });
+    }
+};
+
+
+
+export const revertFeeTransaction = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const { receiptId, status, remarks } = req.body;
+
+        // 1. Validate Input
+        if (!receiptId || !status) {
+            throw new Error("Receipt ID and New Status are required");
+        }
+
+        const validStatuses = ["cancelled", "bounced"];
+        if (!validStatuses.includes(status.toLowerCase())) {
+            throw new Error("Invalid status. Allowed: cancelled, bounced");
+        }
+
+        // 2. Fetch Transaction
+        const transaction = await FeeTransactionModel.findById(receiptId).session(session);
+        if (!transaction) throw new Error("Transaction not found");
+
+        // 3. Prevent Double Revert
+        if (transaction.status === "cancelled" || transaction.status === "bounced") {
+            throw new Error("Transaction is already reverted/cancelled.");
+        }
+
+        // 4. Fetch Linked Student Ledger
+        const studentRecord = await StudentRecordModel.findById(transaction.recordId).session(session);
+        if (!studentRecord) throw new Error("Linked Student Record not found");
+
+        // ======================================================
+        // 5. REVERT LOGIC: SUBTRACT MONEY
+        // ======================================================
+        // We iterate over the 'allocation' array stored in the receipt
+        // Example: [{ feeHead: "firstTermAmt", amount: 5000 }]
+        
+        transaction.allocation.forEach(item => {
+            const head = item.feeHead;
+            const amount = Number(item.amount);
+
+            // Safety check: Don't go below zero (though theoretically shouldn't happen)
+            if (studentRecord.feePaid[head] >= amount) {
+                studentRecord.feePaid[head] -= amount;
+            } else {
+                // Critical data integrity error
+                throw new Error(`Data Integrity Error: Cannot revert ${amount} from ${head}. Only ${studentRecord.feePaid[head]} paid.`);
+            }
+        });
+
+        // ======================================================
+        // 6. RECALCULATE DUES
+        // ======================================================
+        const str = studentRecord.feeStructure;
+        const pd = studentRecord.feePaid;
+
+        const newDues = {
+            admissionDues: str.admissionFee - pd.admissionFee, 
+            
+            // Standard Academic Dues Sum
+            // academicDues: (str.admissionFee + str.firstTermAmt + str.secondTermAmt) 
+            //               - (pd.admissionFee + pd.firstTermAmt + pd.secondTermAmt),
+            
+            firstTermDues: str.firstTermAmt - pd.firstTermAmt,
+            secondTermDues: str.secondTermAmt - pd.secondTermAmt,
+            
+            busfirstTermDues: str.busFirstTermAmt - pd.busFirstTermAmt,
+            busSecondTermDues: str.busSecondTermAmt - pd.busSecondTermAmt
+        };
+
+        studentRecord.dues = newDues;
+        studentRecord.isFullyPaid = false; // Obviously not fully paid if money was removed
+
+        // 7. Update Transaction Status
+        transaction.status = status.toLowerCase(); // "bounced" or "cancelled"
+
+        let exitingRemarks = transaction?.remarks || ""
+
+        if (remarks) {
+            transaction.remarks = remarks + ` (Reverted on ${new Date().toISOString()})`;
+        } else {
+           transaction.remarks = exitingRemarks + ` (Reverted on ${new Date().toISOString()})`;
+        }
+
+        // 8. Save Both
+        await studentRecord.save({ session });
+        await transaction.save({ session });
+
+        await session.commitTransaction();
+        session.endSession();
+
+        return res.status(200).json({
+            ok: true,
+            message: `Transaction marked as ${status}. Amount reverted successfully.`,
+            data: {
+                updatedRecord: studentRecord,
+                updatedTransaction: transaction
+            }
+        });
+
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+        console.error("Revert Error:", error);
         return res.status(500).json({ ok: false, message: error.message });
     }
 };
@@ -626,11 +736,11 @@ export const applyConcession = async (req, res) => {
 
         if (!masterFee) throw new Error("Master Fee Structure not found, please define the fee structrue ");
 
-       
+
 
         // Upload Single File to S3
 
-          let proofObj = null;
+        let proofObj = null;
         if (file) {
             const uploadResult = await uploadFileToS3New(file);
             proofObj = {
@@ -646,7 +756,7 @@ export const applyConcession = async (req, res) => {
         }
 
 
-        
+
         // console.log("uploadedFilesData", uploadedFilesData)
 
         // --- FIX STARTS HERE ---
@@ -781,7 +891,158 @@ export const applyConcession = async (req, res) => {
 };
 
 
+export const updateConcessionDetails = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
+    try {
+        const {
+            schoolId, studentRecordId,
+            concessionType, concessionValue
+        } = req.body;
+
+        // 1. BASIC VALIDATION
+        if (!schoolId || !studentRecordId || !concessionType || concessionValue === undefined) {
+            throw new Error("Missing required fields (schoolId, studentRecordId, concessionType, concessionValue) ");
+        }
+
+        const value = Number(concessionValue);
+
+        // 2. GET RECORD
+        const schoolDoc = await SchoolModel.findById(schoolId).session(session);
+        const currentYear = schoolDoc.currentAcademicYear;
+
+        let studentRecord = await StudentRecordModel.findOne({
+            schoolId, _id:studentRecordId, academicYear: currentYear
+        }).session(session);
+
+        if(!studentRecord){
+            throw new Error("Student Record not found, first create the record");
+        }
+
+        // 3. CHECK PAID STATUS (Strict Mode)
+        if (studentRecord) {
+            const paid = studentRecord.feePaid;
+            const totalPaid = paid.admissionFee + paid.firstTermAmt + paid.secondTermAmt + paid.busFirstTermAmt + paid.busSecondTermAmt;
+            if (totalPaid > 0) throw new Error("Cannot update concession. Fees already paid.");
+        }
+
+        // 4. FETCH MASTER FEES (To reset calculation base)
+        // If record doesn't exist, we need classId from body. If exists, take from record.
+        // const targetClassId = studentRecord ? studentRecord.classId : classId;
+        const targetIsBus = studentRecord?.isBusApplicable
+
+        // const masterFee = await FeeStructureModel.findOne({ schoolId, classId: targetClassId }).session(session);
+        // const baseFees = masterFee.feeHead;
+
+        // 5. RE-CALCULATE STRUCTURE (Waterfall)
+        let existingStructure = {
+            admissionFee: Number(studentRecord.feeStructure.admissionFee|| 0),
+            firstTermAmt: Number(studentRecord.feeStructure.firstTermAmt || 0),
+            secondTermAmt: Number(studentRecord.feeStructure.secondTermAmt || 0),
+            busFirstTermAmt: targetIsBus ? Number(studentRecord.feeStructure.busFirstTermAmt) : 0,
+            busSecondTermAmt: targetIsBus ? Number(studentRecord.feeStructure.busSecondTermAmt) : 0,
+        };
+
+        // Calc Discount
+        let discountAmount = 0;
+        let inAmount = 0;
+        const typeKey = concessionType?.toLowerCase().trim();
+
+        if (typeKey === 'amount') {
+            discountAmount = value;
+            inAmount = value;
+        } else if (typeKey === 'percentage') {
+            // (Tuition + Bus if needed) logic
+            const baseTotal = !targetIsBus ?
+                (existingStructure.admissionFee + existingStructure.firstTermAmt + existingStructure.secondTermAmt) :
+                (existingStructure.admissionFee + existingStructure.firstTermAmt + existingStructure.secondTermAmt + existingStructure.busFirstTermAmt + existingStructure.busSecondTermAmt);
+
+            discountAmount = (baseTotal * value) / 100;
+            inAmount = discountAmount;
+        }
+
+        // 6. SAVE
+        // We preserve the EXISTING PROOF if available
+        const existingProof = studentRecord?.concession?.proof || null;
+
+        const concessionObj = {
+            isApplied: true,
+            type: typeKey,
+            value: value,
+            inAmount: inAmount,
+            remark: studentRecord?.concession.remarks,
+            proof: existingProof, // Keep old proof
+            approvedBy: null
+        };
+
+        if (studentRecord) {
+            // studentRecord.feeStructure = newStructure;
+            studentRecord.concession = concessionObj;
+            await studentRecord.save({ session });
+        } 
+
+        await session.commitTransaction();
+        session.endSession();
+        res.status(200).json({ ok: true, message: "Concession details updated", data: studentRecord });
+
+    } catch (error) {
+        await session.abortTransaction();
+        res.status(500).json({ ok: false, message: error.message });
+    }
+};
+
+
+// controllers/concessionController.js
+
+export const uploadConcessionProof = async (req, res) => {
+    try {
+        const { schoolId, studentRecordId } = req.body;
+        const file = req.files[0];
+
+        console.log("gettin cale proof", schoolId, studentRecordId, file)
+
+        if (!schoolId || !studentRecordId || !file) {
+            return res.status(400).json({ ok: false, message: "Missing file or IDs (schoolId, studentRecordId)" });
+        }
+
+        // 1. Get Record
+        const schoolDoc = await SchoolModel.findById(schoolId);
+        
+        const studentRecord = await StudentRecordModel.findOne({
+            schoolId, _id:studentRecordId, academicYear: schoolDoc.currentAcademicYear
+        });
+
+        if (!studentRecord) {
+            return res.status(404).json({ ok: false, message: "Record not found" });
+        }
+
+        // 2. Upload
+        const uploadResult = await uploadFileToS3New(file);
+        const proofObj = {
+            _id: new mongoose.Types.ObjectId(),
+            type: file.mimetype.startsWith("image") ? "image" : "pdf",
+            key: uploadResult.key,
+            url: uploadResult.url,
+            originalName: file.originalname,
+            uploadedAt: new Date()
+        };
+
+        // 3. Update ONLY proof field
+        // Ensure concession object exists
+        if (!studentRecord.concession) studentRecord.concession = {};
+
+        studentRecord.concession.proof = proofObj;
+
+        await studentRecord.save();
+
+        return res.status(200).json({ ok: true, message: "Proof uploaded", data: studentRecord });
+
+    } catch (error) {
+        console.error("Proof Upload Error:", error);
+        return res.status(500).json({ ok: false, message: error.message });
+    }
+};
 
 
 //  EXAMPLE OF COLLECTION PAYLOAD FROM THE FRONTEND 
@@ -907,7 +1168,7 @@ export const applyConcession = async (req, res) => {
 
 export const getStudentRecordById = async (req, res) => {
     try {
-        const { schoolId, studentId } = req.query;
+        const { schoolId, studentId } = req.params;
 
         if (!schoolId || !studentId) {
             return res.status(400).json({ ok: false, message: "schoolId and studentId are required" });
@@ -986,13 +1247,23 @@ export const deleteStudentRecord = async (req, res) => {
         // await FeeTransactionModel.deleteMany({ recordId: id }).session(session);
 
         // // 3. Delete the Record itself
-        // await StudentRecordModel.findByIdAndDelete(id).session(session);
+        const studentRecord = await StudentRecordModel.findByIdAndDelete(id).session(session);
 
         // // NOTE: We do NOT delete the Student Profile (StudentNewModel)
         // // because the student might have records in other years.
 
-        // await session.commitTransaction();
-        // session.endSession();
+  // 2. CALL THE ARCHIVE UTILITY
+         await archiveData({
+            schoolId: studentRecord.schoolId,
+            category: "student fee record",
+            originalId: studentRecord._id,
+            deletedData: studentRecord.toObject(), // Convert Mongoose doc to plain object
+            deletedBy: req.user._id || null,
+            reason: null, // Optional reason from body
+        });
+
+        await session.commitTransaction();
+        session.endSession();
 
         return res.status(200).json({
             ok: true,
