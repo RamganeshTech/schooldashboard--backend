@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET // store in env
 
 export const createUser = async (req, res) => {
   try {
-    const { schoolCode, email, userName, password, phoneNo,
+    const { email, userName, password, phoneNo,schoolCode,
       //  role, 
       isPlatformAdmin = false } = req.body;
 

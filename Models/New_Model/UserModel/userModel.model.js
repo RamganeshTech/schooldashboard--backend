@@ -16,7 +16,12 @@ const userSchema = new Schema(
     email: { type: String, },
     userName: { type: String, required: true },
     password: { type: String, required: true },
-    role: { type: String, required: true, enum: ["correspondent", "teacher", "principal", "viceprincipal", "administrator", "parent", "accountant"] },
+    role: { type: String, 
+      // required: true, 
+      
+      // enum: ["correspondent", "teacher", "principal", "viceprincipal", "administrator", "parent", "accountant", null]
+    
+    },
     phoneNo: { type: String },
     schoolCode: { type: String, default: null },
     schoolId: { type: mongoose.Schema.ObjectId, default: null, ref: "Schoolmodel" },
