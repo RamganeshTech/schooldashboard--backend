@@ -248,7 +248,7 @@ export const loginUser = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { _id: user._id, role: user.role, userName: user?.userName, 
+      { _id: user._id, role: user?.role || null, userName: user?.userName, 
         email: user.email, phoneNo: user.phoneNo,
          isPlatformAdmin: user?.isPlatformAdmin || false, schoolId: user.schoolId },
       JWT_SECRET,
