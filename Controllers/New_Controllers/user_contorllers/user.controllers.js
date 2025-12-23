@@ -312,7 +312,7 @@ export const isAuthenticated = async (req, res) => {
 
     const data = {
       _id: isExist._id,
-      role: isExist.role,
+      role: isExist?.role || null,
       email: isExist.email,
       schoolId: isExist.schoolId,
       phoneNo: isExist.phoneNo,
