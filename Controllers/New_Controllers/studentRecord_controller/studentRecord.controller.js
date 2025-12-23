@@ -10,6 +10,7 @@ import { uploadImageToS3 } from "../../../Utils/s3upload.js";
 import { uploadFileToS3New } from "../../../Utils/s4UploadsNew.js";
 import { createLedgerEntry } from "../financeLedger_controller/financeLedger.controller.js";
 import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
+import { FinanceLedgerModel } from "../../../Models/New_Model/financeLedger_model/financeLedger.model.js";
 
 // Helper: Generate Receipt Number (REC-YYYY-0001)
 const generateReceiptNo = async (schoolId, session) => {
@@ -474,7 +475,7 @@ export const collectFeeAndManageRecord = async (req, res) => {
                 // studentId: studentId, // Link the student
                 studentRecordId: studentRecord._id, // Link the Academic Record
                 category: "Student Fee", // Or specific head like "Term 1 Fee"
-                section: "Student Record", // or "income"
+                section: "student_record", // or "income"
                 paymentMode: paymentMode.toLowerCase(),
                 description: remarks || `Fee Collection - Receipt #${receiptNo}`,
                 createdBy: req.user._id
@@ -589,6 +590,30 @@ export const revertFeeTransaction = async (req, res) => {
             transaction.remarks = remarks + ` (Reverted on ${new Date().toISOString()})`;
         } else {
            transaction.remarks = exitingRemarks + ` (Reverted on ${new Date().toISOString()})`;
+        }
+
+
+         // ======================================================
+        // 8. FINANCE LEDGER UPDATE (The New Part)
+        // ======================================================
+        // We find the ledger entry linked to this Receipt ID and mark it cancelled.
+        // This removes it from Dashboard calculations immediately.
+        const ledgerUpdate = await FinanceLedgerModel.findOneAndUpdate(
+            { referenceId: receiptId }, // Find by Receipt ID
+            {
+                $set: {
+                    status: status?.toLowerCase(),
+                    cancellationReason: remarks || "Transaction Reverted",
+                    cancelledBy: req?.user?._id || null,
+                    // We don't change amount/date, so history is preserved
+                }
+            },
+            { session, new: true }
+        );
+
+        // Optional: Warn if ledger entry wasn't found (Older data might not have ledger entries)
+        if (!ledgerUpdate) {
+            console.warn(`Warning: No Finance Ledger entry found for Receipt ID ${receiptId}`);
         }
 
         // 8. Save Both

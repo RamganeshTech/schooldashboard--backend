@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import { FinanceLedgerModel } from "../../../Models/New_Model/financeLedger_model/financeLedger.model.js";
+import StudentRecordModel from "../../../Models/New_Model/StudentModel/StudentRecordModel/studentRecord.model.js";
+import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 
 export const createLedgerEntry = async ({
     schoolId,
@@ -65,6 +67,7 @@ export const getAllTransactions = async (req, res) => {
             accountType,     // CASH_IN_HAND or BANK_ACCOUNT
             status,          // active or cancelled
             paymentMode,
+            section,
             fromDate,
             toDate,
             page = 1,
@@ -83,6 +86,7 @@ export const getAllTransactions = async (req, res) => {
         if (accountType) query.accountType = accountType;
         if (status) query.status = status;
         if (paymentMode) query.paymentMode = paymentMode;
+        if (section) query.section = section;
 
         // Date Range Filter
         if (fromDate || toDate) {
@@ -95,18 +99,29 @@ export const getAllTransactions = async (req, res) => {
             }
         }
 
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+        // Optimize Parsing
+        const pageNum = parseInt(page) || 1;
+        const limitNum = parseInt(limit) || 10;
+        const skip = (pageNum - 1) * limitNum;
 
-        // 2. Fetch Data
-        const transactions = await FinanceLedgerModel.find(query)
-            .populate("studentRecordId", "studentId className sectionName _id") // If linked to student
-            .populate("createdBy", "userName role _id") // Who made this entry
-            .sort({ date: -1, createdAt: -1 })
-            .skip(skip)
-            .limit(parseInt(limit));
+        // 2. Execute Fetch and Count in Parallel
+        const [transactions, totalDocs] = await Promise.all([
+            FinanceLedgerModel.find(query)
+                .populate("studentRecordId", "studentId className sectionId classId sectionName _id")
+                .populate("createdBy", "userName role _id")
+                .sort({ date: -1, createdAt: -1 })
+                .skip(skip)
+                .limit(limitNum),
+            FinanceLedgerModel.countDocuments(query)
+        ]);
 
-        // 3. Count
-        const totalDocs = await FinanceLedgerModel.countDocuments(query);
+        // await createAuditLog(req, {
+        //     action: "get",
+        //     module: "finance_ledger",
+        //     targetId: null,
+        //     description: `got the request details`,
+        //     status: "success"
+        // });
 
         res.status(200).json({
             ok: true,
@@ -114,9 +129,9 @@ export const getAllTransactions = async (req, res) => {
             data: transactions,
             pagination: {
                 total: totalDocs,
-                currentPage: parseInt(page),
-                totalPages: Math.ceil(totalDocs / parseInt(limit)),
-                limit: parseInt(limit)
+                currentPage: pageNum,
+                totalPages: Math.ceil(totalDocs / limitNum),
+                limit: limitNum
             }
         });
 
@@ -162,48 +177,304 @@ export const getTransactionById = async (req, res) => {
 
 
 
-export const cancelTransaction = async (req, res) => {
+//  START OF NEW VERSION
+
+
+// ==========================================
+// HELPER: Date Range Calculator
+// ==========================================
+// This allows you to pass ?range=today or ?range=month instead of calculating dates on frontend
+const getDateRange = (range, customStart, customEnd) => {
+    const today = new Date();
+    // Reset to start of day
+    today.setHours(0, 0, 0, 0);
+
+    let start = new Date(today);
+    let end = new Date(today);
+    end.setHours(23, 59, 59, 999);
+
+
+
+    switch (range) {
+        case 'today':
+            // start/end are already set to today
+            break;
+        case 'week':
+            // Set to Monday of this week
+            const day = start.getDay() || 7; // Get current day number, convert Sun(0) to 7
+            if (day !== 1) start.setHours(-24 * (day - 1));
+            break;
+        case 'month':
+            start.setDate(1); // 1st of this month
+            break;
+        case 'year':
+            start.setMonth(0, 1); // Jan 1st of this year
+            break;
+        case 'custom':
+            if (customStart) start = new Date(customStart);
+            if (customEnd) end = new Date(customEnd);
+            end.setHours(23, 59, 59, 999); // Ensure end date includes the whole day
+            break;
+        default:
+            // Default to 'all' or specific logic (e.g., current month)
+            start.setDate(1);
+            break;
+    }
+
+    return { start, end };
+};
+
+// ==========================================
+// 1. KPI & SUMMARY API (Totals for Income, Expense, Net)
+// ==========================================
+// Use for: KPI Cards, "Today's Collection", "MTD Expense"
+
+// esting /stats (KPI Cards)
+// Used for: "Today's Collection", "Total Expense MTD", "Net Balance".
+
+// Scenario A: Get Today's Numbers
+// {{baseURL}}/api/financeledger/stats?schoolId=6942923ab194c60dc810cc6b&range=today
+
+// Scenario B: Get This Month's Numbers (MTD)
+// {{baseURL}}/api/financeledger/stats?schoolId=6942923ab194c60dc810cc6b&range=month
+
+// Scenario C: Get Custom Date Range (e.g., Oct 1 to Oct 31)
+// Note: Format is YYYY-MM-DD
+// {{baseURL}}/api/financeledger/stats?schoolId=6942923ab194c60dc810cc6b&range=custom&startDate=2023-10-01&endDate=2023-10-31
+
+// Scenario D: Get Stats ONLY for Student Fees (Income)
+// NOTE: Use this to see totals related strictly to fee collection, ignoring any other income sources if they exist.
+// {{baseURL}}/api/financeledger/stats?schoolId=6942923ab194c60dc810cc6b&range=month&section=student_record
+// Expected Result: You should see totalExpense as 0 (since student records are usually credits), and totalIncome will show the fee amount.
+
+// Scenario E: Get Stats ONLY for Expenses
+// NOTE: Use this to see totals strictly for the expense department.
+// {{baseURL}}/api/financeledger/stats?schoolId=6942923ab194c60dc810cc6b&range=month&section=expense
+// Expected Result: You should see totalIncome as 0 (mostly), and totalExpense showing the spending.
+
+
+
+export const getFinanceStats = async (req, res) => {
     try {
-        const { id } = req.params;
-        const { reason } = req.body;
+        let { schoolId, range, startDate, endDate, section } = req.query;
 
-        // 1. Strict Role Check
-        if (req.user.role !== "correspondent") {
-            return res.status(403).json({
-                ok: false,
-                message: "Access Denied. Only Correspondent can cancel financial transactions."
-            });
+        range = (range && range.trim() !== "") ? range : "month";
+
+        // 1. Calculate Date Range
+        const { start, end } = getDateRange(range, startDate, endDate);
+
+        if (!schoolId) {
+            return res.status(400).json({ ok: false, message: "schoolId is required" });
         }
 
-        if (!reason) {
-            return res.status(400).json({ ok: false, message: "Cancellation reason is mandatory." });
+        // 2. Build Query
+        const query = {
+            schoolId: new mongoose.Types.ObjectId(schoolId),
+            status: "active", // Ignore cancelled
+            date: { $gte: start, $lte: end }
+        };
+
+        // Optional Section Filter (Works for both Fee Receipts and Section-wise Expenses)
+        if (section) {
+            query.section = section;
         }
 
-        // 2. Find and Update
-        const transaction = await FinanceLedgerModel.findByIdAndUpdate(
-            id,
+        // 3. Aggregate
+        const stats = await FinanceLedgerModel.aggregate([
+            { $match: query },
             {
-                status: "cancelled",
-                cancelledBy: req.user._id,
-                cancellationReason: reason
+                $group: {
+                    _id: null,
+                    totalIncome: {
+                        $sum: { $cond: [{ $eq: ["$transactionType", "CREDIT"] }, "$amount", 0] }
+                    },
+                    totalExpense: {
+                        $sum: { $cond: [{ $eq: ["$transactionType", "DEBIT"] }, "$amount", 0] }
+                    },
+                    transactionCount: { $sum: 1 }
+                }
             },
-            { new: true }
-        );
+            {
+                $project: {
+                    _id: 0,
+                    totalIncome: 1,
+                    totalExpense: 1,
+                    netBalance: { $subtract: ["$totalIncome", "$totalExpense"] },
+                    transactionCount: 1
+                }
+            }
+        ]);
 
-        if (!transaction) {
-            return res.status(404).json({ ok: false, message: "Transaction not found" });
-        }
+        const result = stats[0] || { totalIncome: 0, totalExpense: 0, netBalance: 0, transactionCount: 0 };
 
         res.status(200).json({
-            ok: true,
-            message: "Transaction cancelled successfully.",
-            data: transaction
+            rangeUsed: range,
+            dateStart: start.toDateString(),
+            dateEnd: end.toDateString(),
+            data: result
         });
 
     } catch (error) {
-        console.error("Cancel Transaction Error:", error);
-        res.status(500).json({ ok: false, message: "Failed to cancel transaction", error: error.message });
+        console.error("Stats Error:", error);
+        res.status(500).json({ message: "Error fetching finance stats" });
     }
 };
 
+// ==========================================
+// 2. TIMELINE API (Charts: Daily/Monthly Trends)
+// ==========================================
+// Use for: "Income vs Expense" Bar/Line Chart
 
+
+
+// Scenario A: Daily Trend (For the Current Month)
+// Returns data grouped by Day (e.g., 1st, 2nd, 3rd...)
+// {{baseURL}}/api/financeledger/timeline?schoolId=6942923ab194c60dc810cc6b&range=month
+
+// Scenario B: Track Expense Trend Only
+// Use this for a line chart showing how expenses fluctuate day-by-day this month.
+// {{baseURL}}/api/financeledger/timeline?schoolId=6942923ab194c60dc810cc6b&range=month&section=expense
+
+// Scenario C: Track Fee Collection Trend Only
+// Use this for a bar chart showing daily fee collections.
+// {{baseURL}}/api/financeledger/timeline?schoolId=6942923ab194c60dc810cc6b&range=month&section=student%20record
+
+// Scenario D: Monthly Trend (For the Current Year)
+// Returns data grouped by Month (e.g., Jan, Feb, Mar...)
+// {{baseURL}}/api/financeledger/timeline?schoolId=6942923ab194c60dc810cc6b&range=year
+
+// Scenario E: Daily Trend (For the Current Week)
+// {{baseURL}}/api/financeledger/timeline?schoolId=6942923ab194c60dc810cc6b&range=week
+
+export const getFinanceTimeline = async (req, res) => {
+    try {
+        const { schoolId, range, startDate, endDate, section } = req.query;
+        const { start, end } = getDateRange(range || 'month', startDate, endDate);
+
+        if (!schoolId) {
+            return res.status(400).json({ ok: false, message: "schoolId is required" });
+        }
+
+
+        const query = {
+            schoolId: new mongoose.Types.ObjectId(schoolId),
+            status: "active",
+            date: { $gte: start, $lte: end }
+        };
+
+        if (section) query.section = section;
+
+        // Decide grouping format based on range
+        // If range is 'year', group by Month (YYYY-MM)
+        // If range is 'month' or 'week', group by Day (YYYY-MM-DD)
+        const format = (range === 'year') ? "%Y-%m" : "%Y-%m-%d";
+
+        const timeline = await FinanceLedgerModel.aggregate([
+            { $match: query },
+            {
+                $group: {
+                    _id: {
+                        dateLabel: { $dateToString: { format: format, date: "$date" } },
+                        type: "$transactionType"
+                    },
+                    total: { $sum: "$amount" }
+                }
+            },
+            { $sort: { "_id.dateLabel": 1 } }
+        ]);
+
+        // Transform for easy Frontend Chart consumption
+        // Output: [{ date: "2023-10-01", income: 5000, expense: 200 }, ...]
+        const formattedData = {};
+
+        timeline.forEach(item => {
+            const date = item._id.dateLabel;
+            const type = item._id.type;
+            const amount = item.total;
+
+            if (!formattedData[date]) {
+                formattedData[date] = { date, income: 0, expense: 0 };
+            }
+
+            if (type === "CREDIT") formattedData[date].income = amount;
+            if (type === "DEBIT") formattedData[date].expense = amount;
+        });
+
+        res.status(200).json({
+            //  dateStart: start.toDateString(),
+            // dateEnd: end.toDateString(),
+            data: Object.values(formattedData)
+        });
+
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching timeline" });
+    }
+};
+
+// ==========================================
+// 3. OUTSTANDING FEES API (Total Due)
+// ==========================================
+// Use for: KPI Card "Total Pending" and Pie Chart "Collected vs Pending"
+// NOTE: This queries StudentRecordModel, NOT FinanceLedger
+export const getOutstandingStats = async (req, res) => {
+    try {
+        const { schoolId, academicYear, section } = req.query;
+
+
+        if (!schoolId || !academicYear) {
+            return res.status(400).json({ ok: false, message: "schoolId and academicYear is required" });
+        }
+
+        const query = {
+            schoolId: new mongoose.Types.ObjectId(schoolId),
+            isArchived: false,
+            academicYear: academicYear
+        };
+
+        // if (academicYear) query.academicYear = academicYear;
+        // Assuming StudentRecord has a field like 'currentClass' or 'section'
+        // if (section) query["classDetails.section"] = section; 
+
+        // Aggregate Dues from Student Records
+        const stats = await StudentRecordModel.aggregate([
+            { $match: query },
+            {
+                $group: {
+                    _id: null,
+                    totalAdmissionDue: { $sum: "$dues.admissionDues" },
+                    totalTerm1Due: { $sum: "$dues.firstTermDues" },
+                    totalTerm2Due: { $sum: "$dues.secondTermDues" },
+                    totalBusDue: { $sum: { $add: ["$dues.busfirstTermDues", "$dues.busSecondTermDues"] } }
+                    // Add other dues fields here if you have them
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    totalOutstanding: {
+                        $add: [
+                            "$totalAdmissionDue",
+                            "$totalTerm1Due",
+                            "$totalTerm2Due",
+                            "$totalBusDue"
+                        ]
+                    },
+                    breakdown: {
+                        admission: "$totalAdmissionDue",
+                        term1: "$totalTerm1Due",
+                        term2: "$totalTerm2Due",
+                        transport: "$totalBusDue"
+                    }
+                }
+            }
+        ]);
+
+        const result = stats[0] || { totalOutstanding: 0, breakdown: {} };
+
+        res.status(200).json({ data: result });
+
+    } catch (error) {
+        console.error("Outstanding Error:", error);
+        res.status(500).json({ message: "Error fetching outstanding fees" });
+    }
+};

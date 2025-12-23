@@ -3,15 +3,6 @@ import { createClub, deleteClub, getAllClubs, getClubById, updateClubText, updat
 import { createClubVideo, deleteClubVideo, getAllClubVideos, getClubVideoById, updateClubVideoDetails, updateClubVideoFile } from '../../../Controllers/New_Controllers/club_controllers/clubVideo.controller.js';
 import { upload } from '../../../Utils/s4UploadsNew.js';
 import { multiRoleAuth } from '../../../Middleware/multiRoleRequest.js';
-// import upload from '../middlewares/uploadMiddleware.js'; // Adjust path to your middleware
-// import { 
-//     createClub, 
-//     getAllClubs, 
-//     getClubById, 
-//     updateClubText, 
-//     updateClubThumbnail, 
-//     deleteClub 
-// } from '../controllers/clubMainController.js';
 
 const clubRoutes = express.Router();
 

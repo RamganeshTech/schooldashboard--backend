@@ -35,6 +35,7 @@ import deleteArchiveRoutes from './Routes/New_Routes/deleteArchive_routes/delete
 import financeRoutes from './Routes/New_Routes/financeLedger_routes/financeLedger.routes.js';
 import annoucementRoutes from './Routes/New_Routes/announcement_routes/annoucement.routes.js';
 import clubRoutes from './Routes/New_Routes/club_routes/club.routes.js';
+import auditRoutes from './Routes/New_Routes/audit_routes/audit.routes.js';
 
 
 dotenv.config({ path: '.env.production' });
@@ -55,7 +56,7 @@ app.use('/api/accountant', accountantRoutes)
 app.use('/api/school', schoolRoutes)
 app.use('/api/user', userRoutes)
 app.use('/api/class', classRoutes)
-app.use('/api/section', sectionRoutes)      
+app.use('/api/section', sectionRoutes)
 app.use('/api/teacher', teacherRoutes)
 app.use('/api/feestructure', feeStructureRoutes)
 app.use('/api/student', studentRoutes)
@@ -65,19 +66,22 @@ app.use('/api/attendance', attendanceRoutes)
 
 
 app.use('/api/expense', expenseRoutes)
+app.use('/api/announcement', annoucementRoutes)
 
 app.use('/api/club', clubRoutes);
 
 // not mentioned in the docuemntation
 app.use('/api/financeledger', financeRoutes)
 app.use('/api/deletearchive', deleteArchiveRoutes)
+app.use('/api/audit', auditRoutes)
 // not mentioned in the docuemntation
 
-app.use('/api/announcement', annoucementRoutes)
 
 app.use('/api/download', downloadRoutes)
 
 // app.use("/api/feereceipt")
+
+
 
 
 app.get("/api/health-check", (req, res) => {

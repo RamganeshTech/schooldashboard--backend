@@ -92,26 +92,26 @@ export const createStudentProfile = async (req, res) => {
         // 6. PARENT LINKING LOGIC
         // =========================================================
         // Check if a mobile number was provided in mandatory details
-        const parentMobile = mandatoryData?.mobileNumber;
+          const parentMobile = mandatoryData?.mobileNumber;
 
         if (parentMobile) {
-            // Find a User who is a 'parent' AND has this phone number
-            const parentUser = await UserModel.findOne({
-                phoneNo: parentMobile,
-                role: "parent"
-            });
+            // We use findOneAndUpdate with $addToSet
+            // $addToSet: Adds the ID only if it does NOT already exist in the array.
+            const updatedParent = await UserModel.findOneAndUpdate(
+                { 
+                    phoneNo: parentMobile, 
+                    // role: "parent" 
+                },
+                { 
+                    $addToSet: { studentId: newStudent._id } 
+                },
+                { new: true } // Returns the updated document (optional, for logging)
+            );
 
-            if (parentUser) {
-                // Add this new student's ID to the parent's list
-                // We use $addToSet to prevent duplicates just in case
-                parentUser.studentId = parentUser?.studentId || []; // Ensure array exists
-
-                // Push only if not already present (Standard JS check or Mongoose $addToSet)
-                if (!parentUser?.studentId?.includes(newStudent._id)) {
-                    parentUser.studentId.push(newStudent._id);
-                    await parentUser.save();
-                    console.log(`Linked Student ${newStudent.srId} to Parent ${parentUser.userName}`);
-                }
+            if (updatedParent) {
+                console.log(`[Link Success] Student ${newStudent.srId || newStudent._id} linked to Parent ${updatedParent.userName}`);
+            } else {
+                console.log(`[Link Info] No existing parent account found for mobile: ${parentMobile}. Link will happen when Parent registers.`);
             }
         }
 

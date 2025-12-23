@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { isValidEmail, isValidPhone } from "../../../Utils/basicValidation.js";
 import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model.js";
 import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
+import StudentNewModel from "../../../Models/New_Model/StudentModel/studentNew.model.js";
 
 const JWT_SECRET = process.env.JWT_SECRET // store in env
 
@@ -57,7 +58,7 @@ export const createUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid email format", ok: false });
     }
 
-    if (!userName || !password ) {
+    if (!userName || !password) {
       return res.status(400).json({ ok: false, message: "userName, password are required" });
     }
 
@@ -144,6 +145,34 @@ export const createUser = async (req, res) => {
     // }
 
 
+
+    // ============================================================
+    // 4. REVERSE LOOKUP (THE FIX)
+    // ============================================================
+    // Search for any existing students in this school with this Parent Mobile Number
+    const linkedStudents = await StudentNewModel.find({
+      schoolId: schoolId,
+      "mandatory.mobileNumber": phoneNo, // Matching the schema structure
+      isActive: true // Optional: Only link active students
+    }).select('_id'); // We only need the IDs
+
+    // let finalRole = null; // Default to null or what was sent
+    let parentData = [];
+
+    // If we found students, this user IS A PARENT
+    if (linkedStudents.length > 0) {
+      // finalRole = "parent"; // Auto-assign role
+      // studentIds = linkedStudents.map(student => student._id);
+      parentData = { studentId: linkedStudents.map(s => s._id) };
+      console.log(`[Auto-Link] Found ${studentIds.length} students for new user.`);
+    }
+
+    // If no role passed and no students found, you might want a default (like 'guest')
+    // or keep it null. For now, we leave it as calculated above.
+
+    // ============================================================
+
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -158,6 +187,8 @@ export const createUser = async (req, res) => {
       email,
       schoolCode: schoolCode,
       schoolId: schoolId,
+
+      ...parentData,   // this will decide whether we need to store the studentId or not
 
       // ...(isTeacher && { assignments: [] }), // only store if true
       ...(isPlatformAdmin ? { isPlatformAdmin: true } : {}) // only store if true
@@ -181,7 +212,7 @@ export const createUser = async (req, res) => {
     console.error(err);
     if (err.code === 11000) {
       // duplicate key error
-      return res.status(400).json({ message: "Email already exists", ok: false });
+      return res.status(400).json({ message: "duplicate data, please use different email or phone Number", ok: false });
     }
     res.status(500).json({ ok: false, message: "Server error", error: err?.message });
   }
@@ -217,7 +248,9 @@ export const loginUser = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { _id: user._id, role: user.role, email: user.email, phoneNo: user.phoneNo, isPlatformAdmin: user?.isPlatformAdmin || false, schoolId: user.schoolId },
+      { _id: user._id, role: user.role, userName: user?.userName, 
+        email: user.email, phoneNo: user.phoneNo,
+         isPlatformAdmin: user?.isPlatformAdmin || false, schoolId: user.schoolId },
       JWT_SECRET,
       { expiresIn: "7d" }
     );

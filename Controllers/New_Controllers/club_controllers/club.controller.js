@@ -32,7 +32,7 @@ export const createClub = async (req, res) => {
         // Check if club name already exists for this school
         const existingClub = await ClubMainModel.findOne({ name, schoolId });
         if (existingClub) {
-            return res.status(400).json({ message: "A club with this name already exists." });
+            return res.status(400).json({ ok: false,message: "A club with this name already exists." });
         }
 
         // Handle Thumbnail Upload (if file provided)
@@ -53,13 +53,14 @@ export const createClub = async (req, res) => {
         await newClub.save();
 
         res.status(201).json({
+            ok: true,
             message: "Club created successfully",
             data: newClub
         });
 
     } catch (error) {
         console.error("Create Club Error:", error);
-        res.status(500).json({ message: "Server error while creating club" });
+        res.status(500).json({ok: false, message: "Server error while creating club" });
     }
 };
 
@@ -95,6 +96,7 @@ export const getAllClubs = async (req, res) => {
 
         // 4. Response
         res.status(200).json({
+            ok: true,
             message: "Clubs fetched successfully",
             data: clubs,
             pagination: {
@@ -107,7 +109,7 @@ export const getAllClubs = async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching clubs:", error);
-        res.status(500).json({ message: "Error fetching clubs" });
+        res.status(500).json({ok: false, message: "Error fetching clubs" });
     }
 };
 
@@ -120,13 +122,13 @@ export const getClubById = async (req, res) => {
         const club = await ClubMainModel.findById(id);
 
         if (!club) {
-            return res.status(404).json({ message: "Club not found" });
+            return res.status(404).json({ ok: false,message: "Club not found" });
         }
 
-        res.status(200).json({ data: club });
+        res.status(200).json({ ok: true,data: club });
 
     } catch (error) {
-        res.status(500).json({ message: "Error fetching club details" });
+        res.status(500).json({ ok: false,message: "Error fetching club details" });
     }
 };
 
@@ -153,16 +155,17 @@ export const updateClubText = async (req, res) => {
         );
 
         if (!updatedClub) {
-            return res.status(404).json({ message: "Club not found" });
+            return res.status(404).json({ ok: false,message: "Club not found" });
         }
 
         res.status(200).json({
+            ok: true,
             message: "Club details updated successfully",
             data: updatedClub
         });
 
     } catch (error) {
-        res.status(500).json({ message: "Error updating club details" });
+        res.status(500).json({ ok: false, message: "Error updating club details" });
     }
 };
 
@@ -175,7 +178,7 @@ export const updateClubThumbnail = async (req, res) => {
 
         // 1. Check if file is present
         if (!req.file) {
-            return res.status(400).json({ message: "No image file provided" });
+            return res.status(400).json({ ok: false, message: "No image file provided" });
         }
 
         // 2. Format the new thumbnail data
@@ -189,19 +192,20 @@ export const updateClubThumbnail = async (req, res) => {
         );
 
         if (!updatedClub) {
-            return res.status(404).json({ message: "Club not found" });
+            return res.status(404).json({ ok: false, message: "Club not found" });
         }
 
         // TODO: Optional - Delete the OLD image from S3/Storage here using the old key to save space.
 
         res.status(200).json({
+            ok: true,
             message: "Thumbnail updated successfully",
             data: updatedClub
         });
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Error updating thumbnail" });
+        res.status(500).json({ok: false, message: "Error updating thumbnail" });
     }
 };
 
@@ -238,9 +242,9 @@ export const deleteClub = async (req, res) => {
 
 
 
-        res.status(200).json({ message: "Club and associated videos deleted successfully" });
+        res.status(200).json({ ok: true,message: "Club and associated videos deleted successfully" });
 
     } catch (error) {
-        res.status(500).json({ message: "Error deleting club" });
+        res.status(500).json({ ok: false,message: "Error deleting club" });
     }
 };

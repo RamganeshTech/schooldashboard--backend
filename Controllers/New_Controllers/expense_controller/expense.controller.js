@@ -27,7 +27,7 @@ export const addExpense = async (req, res) => {
     try {
         let {
             amount, category, paymentMode,
-            academicYear,
+            academicYear, date,
             chequeNumber, bankName, remarks, schoolId
         } = req.body;
 
@@ -100,6 +100,7 @@ export const addExpense = async (req, res) => {
             schoolId,
             amount,
             academicYear,
+            date,
             category,
             paymentMode,
             remarks,

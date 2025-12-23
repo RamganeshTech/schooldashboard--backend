@@ -80,7 +80,7 @@ const financeLedgerSchema = new mongoose.Schema(
         // We NEVER delete from this table. We only mark as CANCELLED.
         status: {
             type: String,
-            //   enum: ["active", "cancelled"],
+            //   enum: ["active", "cancelled", "bounced"],
             default: "active",
         },
 
