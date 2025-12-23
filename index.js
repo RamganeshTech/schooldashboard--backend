@@ -34,6 +34,7 @@ import expenseRoutes from './Routes/New_Routes/expense_routes/expense.routes.js'
 import deleteArchiveRoutes from './Routes/New_Routes/deleteArchive_routes/deleteArchieve.routes.js';
 import financeRoutes from './Routes/New_Routes/financeLedger_routes/financeLedger.routes.js';
 import annoucementRoutes from './Routes/New_Routes/announcement_routes/annoucement.routes.js';
+import clubRoutes from './Routes/New_Routes/club_routes/club.routes.js';
 
 
 dotenv.config({ path: '.env.production' });
@@ -61,7 +62,11 @@ app.use('/api/student', studentRoutes)
 app.use('/api/studentrecord', studentRecordRoutes)
 app.use('/api/attendance', attendanceRoutes)
 
+
+
 app.use('/api/expense', expenseRoutes)
+
+app.use('/api/club', clubRoutes);
 
 // not mentioned in the docuemntation
 app.use('/api/financeledger', financeRoutes)

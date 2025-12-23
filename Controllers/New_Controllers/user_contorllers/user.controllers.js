@@ -57,8 +57,8 @@ export const createUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid email format", ok: false });
     }
 
-    if (!userName || !password || !role) {
-      return res.status(400).json({ ok: false, message: "userName, password, and role are required" });
+    if (!userName || !password ) {
+      return res.status(400).json({ ok: false, message: "userName, password are required" });
     }
 
     // Check for existing platform admin if isPlatformAdmin = true

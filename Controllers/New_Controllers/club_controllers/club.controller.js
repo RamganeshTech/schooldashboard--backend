@@ -1,0 +1,246 @@
+// import { ClubMainModel, ClubVideoModel } from "../models/yourModelFile.js"; // Update path
+
+import { ClubMainModel, ClubVideoModel } from "../../../Models/New_Model/club_model/club.model.js";
+import { uploadFileToS3New } from "../../../Utils/s4UploadsNew.js";
+import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
+
+// Helper function to format the file object for your UploadSchema
+export const formatUploadData = async (file) => {
+    if (!file) return null;
+    const uploadData = await uploadFileToS3New(file);
+    const type = file.mimetype.startsWith("image") ? "image" : "video";
+    return {
+        url: uploadData.url,
+        key: uploadData.key,
+        type: type,
+        originalName: file.originalname,
+        uploadedAt: new Date()
+    };
+};
+
+
+
+// ========
+// ==========================================
+// 1. Create Club (With Optional Thumbnail)
+// ==========================================
+export const createClub = async (req, res) => {
+    try {
+        const { name, description, schoolId } = req.body;
+
+        const file = req.file
+        // Check if club name already exists for this school
+        const existingClub = await ClubMainModel.findOne({ name, schoolId });
+        if (existingClub) {
+            return res.status(400).json({ message: "A club with this name already exists." });
+        }
+
+        // Handle Thumbnail Upload (if file provided)
+        let thumbnailData = null;
+
+        if (file) {
+            thumbnailData = await formatUploadData(file);
+        }
+
+        const newClub = new ClubMainModel({
+            schoolId,
+            name,
+            description,
+            thumbnail: thumbnailData, // Can be null if no file uploaded
+            isActive: true
+        });
+
+        await newClub.save();
+
+        res.status(201).json({
+            message: "Club created successfully",
+            data: newClub
+        });
+
+    } catch (error) {
+        console.error("Create Club Error:", error);
+        res.status(500).json({ message: "Server error while creating club" });
+    }
+};
+
+// ==========================================
+// 2. Get All Clubs (with Filters)
+// ==========================================
+export const getAllClubs = async (req, res) => {
+    try {
+        const { schoolId } = req.query; 
+
+        // 1. Pagination Setup
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10; // Default to 10 clubs per page
+        const skip = (page - 1) * limit;
+
+        // 2. Build Query
+        const query = {};
+        if (schoolId) query.schoolId = schoolId;
+
+        // Optional: Filter active clubs only
+        // if (req.user?.role === 'student') query.isActive = true;
+
+        // 3. Execute Data Query and Count Query in Parallel
+        const [totalClubs, clubs] = await Promise.all([
+            ClubMainModel.countDocuments(query), // Get total count for pagination UI
+            ClubMainModel.find(query)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+        ]);
+
+        const totalPages = Math.ceil(totalClubs / limit);
+
+        // 4. Response
+        res.status(200).json({
+            message: "Clubs fetched successfully",
+            data: clubs,
+            pagination: {
+                totalClubs,
+                totalPages,
+                currentPage: page,
+                limit
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching clubs:", error);
+        res.status(500).json({ message: "Error fetching clubs" });
+    }
+};
+
+// ==========================================
+// 3. Get Single Club by ID
+// ==========================================
+export const getClubById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const club = await ClubMainModel.findById(id);
+
+        if (!club) {
+            return res.status(404).json({ message: "Club not found" });
+        }
+
+        res.status(200).json({ data: club });
+
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching club details" });
+    }
+};
+
+// ==========================================
+// 4. Update Text Content Only (No File)
+// ==========================================
+export const updateClubText = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, description, isActive } = req.body;
+
+        // We explicitly ONLY update text fields here. 
+        // We ignore any file uploads sent to this endpoint.
+        const updatedClub = await ClubMainModel.findByIdAndUpdate(
+            id,
+            {
+                $set: {
+                    name,
+                    description,
+                    isActive
+                }
+            },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedClub) {
+            return res.status(404).json({ message: "Club not found" });
+        }
+
+        res.status(200).json({
+            message: "Club details updated successfully",
+            data: updatedClub
+        });
+
+    } catch (error) {
+        res.status(500).json({ message: "Error updating club details" });
+    }
+};
+
+// ==========================================
+// 5. Update Thumbnail Only
+// ==========================================
+export const updateClubThumbnail = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // 1. Check if file is present
+        if (!req.file) {
+            return res.status(400).json({ message: "No image file provided" });
+        }
+
+        // 2. Format the new thumbnail data
+        const newThumbnail = await formatUploadData(req.file);
+
+        // 3. Find and Update
+        const updatedClub = await ClubMainModel.findByIdAndUpdate(
+            id,
+            { $set: { thumbnail: newThumbnail } },
+            { new: true }
+        );
+
+        if (!updatedClub) {
+            return res.status(404).json({ message: "Club not found" });
+        }
+
+        // TODO: Optional - Delete the OLD image from S3/Storage here using the old key to save space.
+
+        res.status(200).json({
+            message: "Thumbnail updated successfully",
+            data: updatedClub
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error updating thumbnail" });
+    }
+};
+
+// ==========================================
+// 6. Delete Club
+// ==========================================
+export const deleteClub = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // const club = await ClubMainModel.findById(id);
+        // if (!club) {
+        //     return res.status(404).json({ message: "Club not found" });
+        // }
+
+        // 1. Delete the Club
+        const deletedOne = await ClubMainModel.findByIdAndDelete(id);
+
+        // 2. CLEANUP: Delete all Videos associated with this club
+        // This ensures no orphaned videos exist in the database
+        await ClubVideoModel.deleteMany({ clubId: id });
+
+
+        // 2. CALL THE ARCHIVE UTILITY
+        await archiveData({
+            schoolId: deletedOne.schoolId,
+            category: "expense",
+            originalId: deletedOne._id,
+            deletedData: deletedOne.toObject(), // Convert Mongoose doc to plain object
+            deletedBy: req.user._id || null,
+            reason: null, // Optional reason from body
+        });
+
+
+
+
+        res.status(200).json({ message: "Club and associated videos deleted successfully" });
+
+    } catch (error) {
+        res.status(500).json({ message: "Error deleting club" });
+    }
+};
