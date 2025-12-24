@@ -4,7 +4,7 @@
 
 import StudentNewModel from "../../../Models/New_Model/StudentModel/studentNew.model.js";
 import UserModel from "../../../Models/New_Model/UserModel/userModel.model.js";
-import { uploadImageToS3 } from "../../../Utils/s3upload.js";
+// import { uploadImageToS3 } from "../../../Utils/s3upload.js";
 import { uploadFileToS3New } from "../../../Utils/s4UploadsNew.js";
 import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
 
@@ -173,7 +173,7 @@ export const updateStudent = async (req, res) => {
                 originalName: file.originalname,
                 uploadedAt: new Date()
             };
-        } 
+        }
 
         try {
             if (typeof updates.mandatory === 'string') {
@@ -389,13 +389,12 @@ export const assignStudentToParent = async (req, res) => {
     try {
 
 
-        const { mobileNumber, studentId } = req.body
+        const { parentNumber, studentId } = req.body
 
-        const parentMobile = mobileNumber;
 
         // Validate required fields
-        if (!parentMobile) {
-            return res.status(400).json({ ok: false, message: "parentMobile is required" });
+        if (!parentNumber) {
+            return res.status(400).json({ ok: false, message: "Mobile Number is required" });
         }
 
         if (!studentId) {
@@ -403,7 +402,7 @@ export const assignStudentToParent = async (req, res) => {
 
         }
 
-        if (parentMobile && !isValidPhone(parentMobile)) {
+        if (parentNumber && !isValidPhone(parentNumber)) {
             return res.status(400).json({ message: "Invalid phone number format", ok: false });
         }
 
@@ -412,7 +411,7 @@ export const assignStudentToParent = async (req, res) => {
         // $addToSet: Adds the ID only if it does NOT already exist in the array.
         const updatedParent = await UserModel.findOneAndUpdate(
             {
-                phoneNo: parentMobile,
+                phoneNo: parentNumber,
                 // role: "parent" 
             },
             {
@@ -421,13 +420,17 @@ export const assignStudentToParent = async (req, res) => {
             { new: true } // Returns the updated document (optional, for logging)
         );
 
+        // 3. Handle "Parent Not Found" Case
+        if (!updatedParent) {
+            return res.status(404).json({
+                ok: false,
+                message: "No user found with this mobile number."
+            });
+        }
+
         console.log("66666666666", updatedParent)
 
-
-        res.status(500).json({ ok: false, message: `Link Success, Student linked to Parent ${updatedParent.userName}` });
-
-
-
+        res.status(200).json({ ok: true, message: `Link Success, Student linked to Parent ${updatedParent.userName}`});
     } catch (error) {
         console.error("assing Students Error:", error);
         return res.status(500).json({ ok: false, message: "Internal server error", error: error.message });

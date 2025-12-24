@@ -1,7 +1,8 @@
 import express from "express";
 import { assignStudentToParent, createStudentProfile, deleteStudent, getAllStudents, getStudentById, updateStudent } from "../../../Controllers/New_Controllers/studentNew_controllers/studentNew.controller.js";
-import { upload } from "../../../Utils/s3upload.js";
+// import { upload } from "../../../Utils/s3upload.js";
 import { multiRoleAuth } from "../../../Middleware/multiRoleRequest.js";
+import { upload } from "../../../Utils/s4UploadsNew.js";
 
 const studentRoutes = express.Router();
 

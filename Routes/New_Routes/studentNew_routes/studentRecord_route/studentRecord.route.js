@@ -20,7 +20,7 @@ studentRecordRoutes.post(
   "/applyconcession",
   multiRoleAuth("correspondent", "accountant", "principal"),
   // "files" is the key name for form-data. 10 is max count.
-  upload.array("file"), 
+  upload.single("file"), 
   applyConcession
 );
 
