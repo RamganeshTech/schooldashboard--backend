@@ -14,7 +14,7 @@ const feeHeads = new Schema({
 const FeeTransactionSchema = new mongoose.Schema({
     schoolId: { type: mongoose.Schema.Types.ObjectId, ref: "SchoolModel", },
     studentId: { type: mongoose.Schema.Types.ObjectId, ref: "StudentNewModel", },
-    recordId: { type: mongoose.Schema.Types.ObjectId, ref: "StudentRecordModel", }, // The Year Ledger
+    recordId: { type: mongoose.Schema.Types.ObjectId, ref: "StudentRecord", }, // The Year Ledger
     academicYear: { type: String, default: null },
 
     receiptNo: { type: String, }, // REC-2025-001

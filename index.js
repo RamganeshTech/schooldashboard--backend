@@ -36,6 +36,7 @@ import financeRoutes from './Routes/New_Routes/financeLedger_routes/financeLedge
 import annoucementRoutes from './Routes/New_Routes/announcement_routes/annoucement.routes.js';
 import clubRoutes from './Routes/New_Routes/club_routes/club.routes.js';
 import auditRoutes from './Routes/New_Routes/audit_routes/audit.routes.js';
+import feeReceiptRoutes from './Routes/New_Routes/feeTrasaction_receipt_routes/feeTrasactionReceipt.routes.js';
 
 
 dotenv.config({ path: '.env.production' });
@@ -65,6 +66,7 @@ app.use('/api/feestructure', feeStructureRoutes)
 app.use('/api/student', studentRoutes)
 app.use('/api/studentrecord', studentRecordRoutes)
 app.use('/api/attendance', attendanceRoutes)
+app.use('/api/fee/receipt', feeReceiptRoutes)
 
 
 

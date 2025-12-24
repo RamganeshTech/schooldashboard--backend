@@ -4,6 +4,7 @@
 
 import StudentNewModel from "../../../Models/New_Model/StudentModel/studentNew.model.js";
 import UserModel from "../../../Models/New_Model/UserModel/userModel.model.js";
+import { isValidPhone } from "../../../Utils/basicValidation.js";
 // import { uploadImageToS3 } from "../../../Utils/s3upload.js";
 import { uploadFileToS3New } from "../../../Utils/s4UploadsNew.js";
 import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
@@ -389,12 +390,12 @@ export const assignStudentToParent = async (req, res) => {
     try {
 
 
-        const { parentNumber, studentId } = req.body
+        const { parentId, studentId } = req.body
 
 
         // Validate required fields
-        if (!parentNumber) {
-            return res.status(400).json({ ok: false, message: "Mobile Number is required" });
+        if (!parentId) {
+            return res.status(400).json({ ok: false, message: "parentId is required" });
         }
 
         if (!studentId) {
@@ -402,23 +403,60 @@ export const assignStudentToParent = async (req, res) => {
 
         }
 
-        if (parentNumber && !isValidPhone(parentNumber)) {
-            return res.status(400).json({ message: "Invalid phone number format", ok: false });
-        }
 
         console.log("5555555555")
         // We use findOneAndUpdate with $addToSet
         // $addToSet: Adds the ID only if it does NOT already exist in the array.
-        const updatedParent = await UserModel.findOneAndUpdate(
-            {
-                phoneNo: parentNumber,
-                // role: "parent" 
-            },
+        const updatedParent = await UserModel.findByIdAndUpdate(
+            parentId,
             {
                 $addToSet: { studentId: studentId }
             },
             { new: true } // Returns the updated document (optional, for logging)
-        );
+        ).select("-password")
+
+        // 3. Handle "Parent Not Found" Case
+        if (!updatedParent) {
+            return res.status(404).json({
+                ok: false,
+                message: "No user found with this parentId."
+            });
+        }
+
+        console.log("66666666666", updatedParent)
+
+        res.status(200).json({ ok: true, data: updatedParent, message: `Link Success, Student linked to Parent ${updatedParent.userName}` });
+    } catch (error) {
+        console.error("assing Students Error:", error);
+        return res.status(500).json({ ok: false, message: "Internal server error", error: error.message });
+
+    }
+}
+
+export const removeStudentFromParent = async (req, res) => {
+    try {
+        const { parentId, studentId } = req.body;
+
+        // 1. Validate required fields
+        if (!parentId) {
+            return res.status(400).json({ ok: false, message: "parentId is required" });
+        }
+
+        if (!studentId) {
+            return res.status(400).json({ ok: false, message: "studentId is required" });
+        }
+
+        // 2. Database Operation: REMOVE the ID
+        // $pull: Removes all instances of a value from an existing array.
+        const updatedParent = await UserModel.findByIdAndUpdate(
+           parentId,
+            {
+                $pull: { studentId: studentId } // <--- THIS IS THE KEY CHANGE
+                // $pull: { studentId: new mongoose.Types.ObjectId(studentId) } 
+
+            },
+            { new: true } // Returns the updated document
+        ).select("-password");
 
         // 3. Handle "Parent Not Found" Case
         if (!updatedParent) {
@@ -428,12 +466,16 @@ export const assignStudentToParent = async (req, res) => {
             });
         }
 
-        console.log("66666666666", updatedParent)
+        console.log("Student Removed. Updated Parent:", updatedParent);
 
-        res.status(200).json({ ok: true, message: `Link Success, Student linked to Parent ${updatedParent.userName}`});
+        return res.status(200).json({
+            ok: true,
+            data: updatedParent,
+            message: `Unlink Success. Student removed from Parent ${updatedParent.userName}`
+        });
+
     } catch (error) {
-        console.error("assing Students Error:", error);
+        console.error("Remove Student Error:", error);
         return res.status(500).json({ ok: false, message: "Internal server error", error: error.message });
-
     }
-}
+};

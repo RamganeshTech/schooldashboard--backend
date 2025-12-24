@@ -3,14 +3,6 @@ import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model.
 import AttendanceModel from "../../../Models/New_Model/attendance_model/attendance.model.js";
 import StudentRecordModel from "../../../Models/New_Model/StudentModel/StudentRecordModel/studentRecord.model.js";
 
-// Helper: Normalize Date to Midnight (to avoid time conflicts)
-// Helper: Normalize Date to UTC Midnight
-// const getMidnightDate = (dateString) => {
-//     const d = new Date(dateString);
-//     // This creates a date strictly at 00:00:00 UTC
-//     return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-// };
-
 
 const getMidnightDate = (dateString) => {
     if(!dateString) return new Date();
@@ -120,9 +112,7 @@ export const getAttendanceSheet = async (req, res) => {
 // 2. MARK OR UPDATE ATTENDANCE (Upsert Logic)
 // ==========================================================
 export const markAttendance = async (req, res) => {
-    // const session = await mongoose.startSession();
-    // session.startTransaction();
-
+   
     try {
         const {
             schoolId,
@@ -151,7 +141,6 @@ export const markAttendance = async (req, res) => {
             sectionId: sectionId || null,
             date: targetDate
         })
-        // .session(session);
 
         if (attendanceDoc) {
             // =====================================================
@@ -207,8 +196,7 @@ export const markAttendance = async (req, res) => {
             });
         }
 
-        // await session.commitTransaction();
-        // session.endSession();
+       
 
         return res.status(200).json({
             ok: true,
@@ -217,8 +205,7 @@ export const markAttendance = async (req, res) => {
         });
 
     } catch (error) {
-        // await session.abortTransaction();
-        // session.endSession();
+       
         console.error("Mark Attendance Error:", error);
         return res.status(500).json({ ok: false, message: error.message });
     }
@@ -296,5 +283,82 @@ export const getClassAttendanceHistory = async (req, res) => {
     } catch (error) {
         console.error("History Error:", error);
         return res.status(500).json({ ok: false, message: error.message });
+    }
+};
+
+
+
+
+
+export const getStudentAttendanceHistory = async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const { month, year } = req.query; // Expects month=10, year=2024
+
+        if (!studentId || !mongoose.Types.ObjectId.isValid(studentId)) {
+            return res.status(400).json({ ok: false, message: "Invalid Student ID" });
+        }
+
+        // 1. Build the Date Filter
+        let dateFilter = {};
+        
+        if (month && year) {
+            // *** CHANGE: USE Date.UTC TO MATCH YOUR STORAGE LOGIC ***
+            
+            // Start: 1st day of month at 00:00:00 UTC
+            const startDate = new Date(Date.UTC(year, Number(month) - 1, 1));
+            
+            // End: Last day of month at 23:59:59.999 UTC
+            // (Day 0 of next month gives the last day of current month)
+            const endDate = new Date(Date.UTC(year, Number(month), 0, 23, 59, 59, 999));
+            
+            dateFilter = {
+                date: { $gte: startDate, $lte: endDate }
+            };
+        }
+
+        // 2. The Query
+        const query = {
+            ...dateFilter,
+            "records.studentId": studentId
+        };
+
+        // 3. Fetch Data
+        // records.$ matches ONLY the array element for this specific student
+        const attendanceList = await AttendanceModel.find(query)
+            .select("date records.$") 
+            .sort({ date: 1 });       
+
+        // 4. Format Data for Parent App
+        const formattedData = attendanceList.map(doc => {
+            // Since we used records.$, the array will strictly have length 1
+            const record = doc.records[0]; 
+
+            return {
+                attendanceId: doc._id,
+                date: doc.date, // Returns ISO String (e.g., 2024-10-01T00:00:00.000Z)
+                status: record.status,
+                remark: record.remark || null
+            };
+        });
+
+        // 5. Calculate Summary
+        const summary = {
+            totalDays: formattedData.length,
+            present: formattedData.filter(d => d.status.toLowerCase() === 'present').length,
+            absent: formattedData.filter(d => d.status.toLowerCase() === 'absent').length,
+            late: formattedData.filter(d => d.status.toLowerCase() === 'late').length,
+            halfDay: formattedData.filter(d => d.status.toLowerCase() === 'half-day').length,
+        };
+
+        return res.status(200).json({
+            ok: true,
+            data: formattedData,
+            summary: summary
+        });
+
+    } catch (error) {
+        console.error("Get Student Attendance Error:", error);
+        return res.status(500).json({ ok: false, message: "Internal server error" });
     }
 };

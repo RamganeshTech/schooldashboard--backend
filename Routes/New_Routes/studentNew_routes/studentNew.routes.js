@@ -1,5 +1,5 @@
 import express from "express";
-import { assignStudentToParent, createStudentProfile, deleteStudent, getAllStudents, getStudentById, updateStudent } from "../../../Controllers/New_Controllers/studentNew_controllers/studentNew.controller.js";
+import { assignStudentToParent, createStudentProfile, deleteStudent, getAllStudents, getStudentById, removeStudentFromParent, updateStudent } from "../../../Controllers/New_Controllers/studentNew_controllers/studentNew.controller.js";
 // import { upload } from "../../../Utils/s3upload.js";
 import { multiRoleAuth } from "../../../Middleware/multiRoleRequest.js";
 import { upload } from "../../../Utils/s4UploadsNew.js";
@@ -57,6 +57,13 @@ studentRoutes.put(
   "/assignstudent",
   multiRoleAuth("correspondent", "administrator"),
   assignStudentToParent
+);
+
+
+studentRoutes.put(
+  "/removestudent",
+  multiRoleAuth("correspondent", "administrator"),
+  removeStudentFromParent
 );
 
 

@@ -11,7 +11,7 @@ const sectionSchema = new Schema(
     // ASSIGN TEACHER: Used for standard classes with sections
     classTeacherId: { type: Schema.Types.ObjectId, ref: "UserModel", default: null },
     
-    // Optional: Room number or capacity
+    // Optional: Room number and capacity
     roomNumber: { type: String },
     capacity: { type: Number, default: null }
   },

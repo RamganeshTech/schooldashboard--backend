@@ -6,7 +6,7 @@ import FeeStructureModel from "../../../Models/New_Model/FeeStructureModel/FeeSt
 import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model.js";
 import ClassModel from "../../../Models/New_Model/SchoolModel/classModel.model.js";
 import SectionModel from "../../../Models/New_Model/SchoolModel/section.model.js";
-import { uploadImageToS3 } from "../../../Utils/s3upload.js";
+// import { uploadImageToS3 } from "../../../Utils/s3upload.js";
 import { uploadFileToS3New } from "../../../Utils/s4UploadsNew.js";
 import { createLedgerEntry } from "../financeLedger_controller/financeLedger.controller.js";
 import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
@@ -778,7 +778,7 @@ export const applyConcession = async (req, res) => {
             schoolId, classId: targetClassId
         }).session(session);
 
-        if (!masterFee) throw new Error("Master Fee Structure not found, please define the fee structrue ");
+        if (!masterFee) throw new Error("Master Fee Structure not found, please define the fee structrue for the selected class");
 
 
 
@@ -1221,6 +1221,9 @@ export const getStudentRecordById = async (req, res) => {
         // 1. Determine Academic Year
         // If year provided, use it. If not, use School's Current Year.
         // let targetYear = null;
+
+        console.log("Get Student Record Error:");
+
 
         const schoolDoc = await SchoolModel.findById(schoolId);
         if (!schoolDoc) return res.status(404).json({ ok: false, message: "School not found" });
