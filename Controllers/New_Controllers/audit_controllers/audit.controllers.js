@@ -51,7 +51,8 @@ export const createAuditLog = async (req, {
         });
 
         // 4. Save (We don't await this to keep the API fast)
-        newLog.save().catch(err => console.error("Audit Save Error:", err));
+        await newLog.save()
+        // .catch(err => console.error("Audit Save Error:", err));
 
     } catch (error) {
         console.error("Audit Helper Failed:", error);

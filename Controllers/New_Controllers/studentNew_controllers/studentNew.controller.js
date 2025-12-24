@@ -5,6 +5,7 @@
 import StudentNewModel from "../../../Models/New_Model/StudentModel/studentNew.model.js";
 import UserModel from "../../../Models/New_Model/UserModel/userModel.model.js";
 import { uploadImageToS3 } from "../../../Utils/s3upload.js";
+import { uploadFileToS3New } from "../../../Utils/s4UploadsNew.js";
 import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
 
 // ==========================================
@@ -48,10 +49,13 @@ export const createStudentProfile = async (req, res) => {
         // 2. Handle Image Upload (Optional)
         let uploadedImage = null;
         if (file) {
-            const uploadedUrl = await uploadImageToS3(file);
+            const uploadedData = await uploadFileToS3New(file);
+            const type = file.mimetype.startsWith("image") ? "image" : "pdf";
+
             uploadedImage = {
-                type: "image",
-                url: uploadedUrl,
+                url: uploadedData.url,
+                key: uploadedData.key,
+                type: type,
                 originalName: file.originalname,
                 uploadedAt: new Date()
             };
@@ -92,21 +96,25 @@ export const createStudentProfile = async (req, res) => {
         // 6. PARENT LINKING LOGIC
         // =========================================================
         // Check if a mobile number was provided in mandatory details
-          const parentMobile = mandatoryData?.mobileNumber;
+        const parentMobile = mandatoryData?.mobileNumber;
 
         if (parentMobile) {
+            console.log("333333333")
             // We use findOneAndUpdate with $addToSet
             // $addToSet: Adds the ID only if it does NOT already exist in the array.
             const updatedParent = await UserModel.findOneAndUpdate(
-                { 
-                    phoneNo: parentMobile, 
+                {
+                    phoneNo: parentMobile,
                     // role: "parent" 
                 },
-                { 
-                    $addToSet: { studentId: newStudent._id } 
+                {
+                    $addToSet: { studentId: newStudent._id }
                 },
                 { new: true } // Returns the updated document (optional, for logging)
             );
+
+            console.log("444444", updatedParent)
+
 
             if (updatedParent) {
                 console.log(`[Link Success] Student ${newStudent.srId || newStudent._id} linked to Parent ${updatedParent.userName}`);
@@ -143,16 +151,29 @@ export const updateStudent = async (req, res) => {
         const file = req.file;
 
 
-        // Handle Image Update
+        // // Handle Image Update
+        // if (file) {
+        //     const uploadedUrl = await uploadImageToS3(file);
+        //     updates.studentImage = {
+        //         type: "image",
+        //         url: uploadedUrl,
+        //         originalName: file.originalname,
+        //         uploadedAt: new Date()
+        //     };
+        // }
+
         if (file) {
-            const uploadedUrl = await uploadImageToS3(file);
+            const uploadedData = await uploadFileToS3New(file);
+            const type = file.mimetype.startsWith("image") ? "image" : "pdf";
+
             updates.studentImage = {
-                type: "image",
-                url: uploadedUrl,
+                url: uploadedData.url,
+                key: uploadedData.key,
+                type: type,
                 originalName: file.originalname,
                 uploadedAt: new Date()
             };
-        }
+        } 
 
         try {
             if (typeof updates.mandatory === 'string') {
@@ -189,6 +210,34 @@ export const updateStudent = async (req, res) => {
             return res.status(404).json({ ok: false, message: "Student not found" });
         }
 
+        // Check if a mobile number was provided in mandatory details
+        const parentMobile = updates.mandatory?.mobileNumber;
+
+        if (parentMobile) {
+            console.log("5555555555")
+            // We use findOneAndUpdate with $addToSet
+            // $addToSet: Adds the ID only if it does NOT already exist in the array.
+            const updatedParent = await UserModel.findOneAndUpdate(
+                {
+                    phoneNo: parentMobile,
+                    // role: "parent" 
+                },
+                {
+                    $addToSet: { studentId: updatedStudent._id }
+                },
+                { new: true } // Returns the updated document (optional, for logging)
+            );
+
+            console.log("66666666666", updatedParent)
+
+
+            if (updatedParent) {
+                console.log(`[Link Success] Student ${updatedStudent.srId || updatedStudent._id} linked to Parent ${updatedParent.userName}`);
+            } else {
+                console.log(`[Link Info] No existing parent account found for mobile: ${parentMobile}. Link will happen when Parent registers.`);
+            }
+        }
+
         return res.status(200).json({
             ok: true,
             message: "Student updated successfully",
@@ -219,8 +268,8 @@ export const deleteStudent = async (req, res) => {
         await archiveData({
             schoolId: deletedStudent?.schoolId,
             category: "student",
-            originalId: updated._id,
-            deletedData: updated.toObject(), // Convert Mongoose doc to plain object
+            originalId: deletedStudent._id,
+            deletedData: deletedStudent.toObject(), // Convert Mongoose doc to plain object
             deletedBy: req.user._id || null,
             reason: null, // Optional reason from body
         });
@@ -331,3 +380,57 @@ export const getAllStudents = async (req, res) => {
         return res.status(500).json({ ok: false, message: "Internal server error", error: error.message });
     }
 };
+
+
+
+
+
+export const assignStudentToParent = async (req, res) => {
+    try {
+
+
+        const { mobileNumber, studentId } = req.body
+
+        const parentMobile = mobileNumber;
+
+        // Validate required fields
+        if (!parentMobile) {
+            return res.status(400).json({ ok: false, message: "parentMobile is required" });
+        }
+
+        if (!studentId) {
+            return res.status(400).json({ ok: false, message: "studentId is required" });
+
+        }
+
+        if (parentMobile && !isValidPhone(parentMobile)) {
+            return res.status(400).json({ message: "Invalid phone number format", ok: false });
+        }
+
+        console.log("5555555555")
+        // We use findOneAndUpdate with $addToSet
+        // $addToSet: Adds the ID only if it does NOT already exist in the array.
+        const updatedParent = await UserModel.findOneAndUpdate(
+            {
+                phoneNo: parentMobile,
+                // role: "parent" 
+            },
+            {
+                $addToSet: { studentId: studentId }
+            },
+            { new: true } // Returns the updated document (optional, for logging)
+        );
+
+        console.log("66666666666", updatedParent)
+
+
+        res.status(500).json({ ok: false, message: `Link Success, Student linked to Parent ${updatedParent.userName}` });
+
+
+
+    } catch (error) {
+        console.error("assing Students Error:", error);
+        return res.status(500).json({ ok: false, message: "Internal server error", error: error.message });
+
+    }
+}

@@ -84,6 +84,9 @@ const financeLedgerSchema = new mongoose.Schema(
             default: "active",
         },
 
+        penaltyAmount: { type: Number, } ,
+
+
         // If cancelled, why?
         cancellationReason: {
             type: String,

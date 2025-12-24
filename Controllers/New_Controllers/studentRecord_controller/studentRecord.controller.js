@@ -514,7 +514,7 @@ export const revertFeeTransaction = async (req, res) => {
     session.startTransaction();
 
     try {
-        const { receiptId, status, remarks } = req.body;
+        const { receiptId, status, remarks, penaltyAmount } = req.body;
 
         // 1. Validate Input
         if (!receiptId || !status) {
@@ -526,6 +526,9 @@ export const revertFeeTransaction = async (req, res) => {
             throw new Error("Invalid status. Allowed: cancelled, bounced");
         }
 
+       
+
+
         // 2. Fetch Transaction
         const transaction = await FeeTransactionModel.findById(receiptId).session(session);
         if (!transaction) throw new Error("Transaction not found");
@@ -534,6 +537,20 @@ export const revertFeeTransaction = async (req, res) => {
         if (transaction.status === "cancelled" || transaction.status === "bounced") {
             throw new Error("Transaction is already reverted/cancelled.");
         }
+
+         // *** NEW LOGIC STARTS HERE ***
+        // If status is bounced, we store the penalty amount in the receipt
+        if (status.toLowerCase() === "bounced") {
+            if (penaltyAmount) {
+                transaction.penaltyAmount = Number(penaltyAmount);
+            }
+            else {
+                // Optional: Throw error if penalty is mandatory for bounced checks
+                throw new Error("Penalty amount is required when status is bounced");
+                // transaction.penaltyAmount = 0;
+            }
+        }
+        // *** NEW LOGIC ENDS HERE ***
 
         // 4. Fetch Linked Student Ledger
         const studentRecord = await StudentRecordModel.findById(transaction.recordId).session(session);
@@ -544,7 +561,7 @@ export const revertFeeTransaction = async (req, res) => {
         // ======================================================
         // We iterate over the 'allocation' array stored in the receipt
         // Example: [{ feeHead: "firstTermAmt", amount: 5000 }]
-        
+
         transaction.allocation.forEach(item => {
             const head = item.feeHead;
             const amount = Number(item.amount);
@@ -565,15 +582,15 @@ export const revertFeeTransaction = async (req, res) => {
         const pd = studentRecord.feePaid;
 
         const newDues = {
-            admissionDues: str.admissionFee - pd.admissionFee, 
-            
+            admissionDues: str.admissionFee - pd.admissionFee,
+
             // Standard Academic Dues Sum
             // academicDues: (str.admissionFee + str.firstTermAmt + str.secondTermAmt) 
             //               - (pd.admissionFee + pd.firstTermAmt + pd.secondTermAmt),
-            
+
             firstTermDues: str.firstTermAmt - pd.firstTermAmt,
             secondTermDues: str.secondTermAmt - pd.secondTermAmt,
-            
+
             busfirstTermDues: str.busFirstTermAmt - pd.busFirstTermAmt,
             busSecondTermDues: str.busSecondTermAmt - pd.busSecondTermAmt
         };
@@ -584,16 +601,18 @@ export const revertFeeTransaction = async (req, res) => {
         // 7. Update Transaction Status
         transaction.status = status.toLowerCase(); // "bounced" or "cancelled"
 
+
+
         let exitingRemarks = transaction?.remarks || ""
 
         if (remarks) {
             transaction.remarks = remarks + ` (Reverted on ${new Date().toISOString()})`;
         } else {
-           transaction.remarks = exitingRemarks + ` (Reverted on ${new Date().toISOString()})`;
+            transaction.remarks = exitingRemarks + ` (Reverted on ${new Date().toISOString()})`;
         }
 
 
-         // ======================================================
+        // ======================================================
         // 8. FINANCE LEDGER UPDATE (The New Part)
         // ======================================================
         // We find the ledger entry linked to this Receipt ID and mark it cancelled.
@@ -938,10 +957,10 @@ export const updateConcessionDetails = async (req, res) => {
         const currentYear = schoolDoc.currentAcademicYear;
 
         let studentRecord = await StudentRecordModel.findOne({
-            schoolId, _id:studentRecordId, academicYear: currentYear
+            schoolId, _id: studentRecordId, academicYear: currentYear
         }).session(session);
 
-        if(!studentRecord){
+        if (!studentRecord) {
             throw new Error("Student Record not found, first create the record");
         }
 
@@ -962,7 +981,7 @@ export const updateConcessionDetails = async (req, res) => {
 
         // 5. RE-CALCULATE STRUCTURE (Waterfall)
         let existingStructure = {
-            admissionFee: Number(studentRecord.feeStructure.admissionFee|| 0),
+            admissionFee: Number(studentRecord.feeStructure.admissionFee || 0),
             firstTermAmt: Number(studentRecord.feeStructure.firstTermAmt || 0),
             secondTermAmt: Number(studentRecord.feeStructure.secondTermAmt || 0),
             busFirstTermAmt: targetIsBus ? Number(studentRecord.feeStructure.busFirstTermAmt) : 0,
@@ -1005,7 +1024,7 @@ export const updateConcessionDetails = async (req, res) => {
             // studentRecord.feeStructure = newStructure;
             studentRecord.concession = concessionObj;
             await studentRecord.save({ session });
-        } 
+        }
 
         await session.commitTransaction();
         session.endSession();
@@ -1033,9 +1052,9 @@ export const uploadConcessionProof = async (req, res) => {
 
         // 1. Get Record
         const schoolDoc = await SchoolModel.findById(schoolId);
-        
+
         const studentRecord = await StudentRecordModel.findOne({
-            schoolId, _id:studentRecordId, academicYear: schoolDoc.currentAcademicYear
+            schoolId, _id: studentRecordId, academicYear: schoolDoc.currentAcademicYear
         });
 
         if (!studentRecord) {
@@ -1277,8 +1296,8 @@ export const deleteStudentRecord = async (req, res) => {
         // // NOTE: We do NOT delete the Student Profile (StudentNewModel)
         // // because the student might have records in other years.
 
-  // 2. CALL THE ARCHIVE UTILITY
-         await archiveData({
+        // 2. CALL THE ARCHIVE UTILITY
+        await archiveData({
             schoolId: studentRecord.schoolId,
             category: "student fee record",
             originalId: studentRecord._id,

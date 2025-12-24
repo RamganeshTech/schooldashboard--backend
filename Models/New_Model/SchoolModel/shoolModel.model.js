@@ -4,12 +4,23 @@ const { Schema, model } = mongoose;
 
 
 
+// const uploadSchema = new Schema({
+//     type: { type: String, enum: ["image", "pdf"] },
+//     url: { type: String, },
+//     originalName: String,
+//     uploadedAt: { type: Date, default: new Date() }
+// });
+
+
 const uploadSchema = new Schema({
     type: { type: String, enum: ["image", "pdf"] },
+    key: { type: String, },
     url: { type: String, },
     originalName: String,
     uploadedAt: { type: Date, default: new Date() }
 });
+
+
 
 
 

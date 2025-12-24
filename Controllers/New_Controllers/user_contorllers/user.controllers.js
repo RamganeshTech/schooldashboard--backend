@@ -483,6 +483,8 @@ export const assignRolesToUser = async (req, res) => {
     const { userId } = req.params;
     let { role } = req.body;
 
+    // console.log("getting called 22222222222")
+
 
     if (!userId) {
       return res.status(400).json({ ok: false, message: "userId is missing" });
@@ -491,14 +493,15 @@ export const assignRolesToUser = async (req, res) => {
 
     const allowedRoles = ["correspondent", "teacher", "principal", "viceprincipal", "administrator", "parent", "accountant"]
 
+    console.log("allowedRoles", allowedRoles)
     if (!allowedRoles.includes(role)) {
-      return res.status(400).json({ ok: false, message: `role not allowed, only ${allowedRoles.join(", ")} are allowed` });
+      return res.status(400).json({ ok: false, message: `22222  role not allowed, only ${allowedRoles.join(", ")} are allowed` });
 
     }
 
 
     // 5. Perform Update
-    const updatedUser = await UserModel.findByIdAndUpdate(id, { role: role }, {
+    const updatedUser = await UserModel.findByIdAndUpdate(userId, { role: role }, {
       new: true, // Return the updated document
       runValidators: true
     }).select("-password"); // Do not return the password
