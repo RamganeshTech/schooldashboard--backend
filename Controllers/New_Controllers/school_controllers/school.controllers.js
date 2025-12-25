@@ -31,6 +31,12 @@ export const createSchool = async (req, res) => {
     address = address?.trim();
     currentAcademicYear = currentAcademicYear?.trim();
 
+    if (!isPlatformAdmin) {
+      return res.status(403).json({
+        message: "You do not have permission to create a school. Please contact the platform administrator.",
+        ok: false
+      })
+    }
 
 
     console.log("file 11111111", file)

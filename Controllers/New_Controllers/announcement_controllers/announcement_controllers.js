@@ -3,6 +3,8 @@ import { uploadFileToS3New } from "../../../Utils/s4UploadsNew.js";
 import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model.js";
 import { AnnouncementModel } from "../../../Models/New_Model/announcement_model/announcement.model.js";
 import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
+import StudentNewModel from "../../../Models/New_Model/StudentModel/studentNew.model.js";
+import UserModel from "../../../Models/New_Model/UserModel/userModel.model.js";
 
 export const createAnnouncement = async (req, res) => {
     try {
@@ -169,79 +171,378 @@ export const createAnnouncement = async (req, res) => {
 
 
 
+//  FIRST VERSION
+// export const getAnnouncements = async (req, res) => {
+//     try {
+//         const { schoolId, page = 1, limit = 10, studentClassId } = req.query;
+//         const userRole = req.user.role.toLowerCase();
+
+//         if (!schoolId) return res.status(400).json({ ok: false, message: "schoolId required" });
+
+//         // --- BASE QUERY ---
+//         let query = {
+//             schoolId: new mongoose.Types.ObjectId(schoolId),
+//             // isDeleted: false // 1. NEVER show deleted items
+//         };
+
+//         const now = new Date();
+
+//         // --- ROLE BASED FILTERING ---
+
+//         // ADMIN / PRINCIPAL / CORRESPONDENT
+//         // They should see ALL (Active) posts, even future scheduled ones
+//         if (["administrator", "principal", "correspondent"].includes(userRole)) {
+//             // No extra filters needed. They see everything.
+
+//         }
+
+//         // TEACHERS / STAFF
+//         else if (["teacher"].includes(userRole)) {
+//             query.targetAudience = { $in: ["all", "teacher"] };
+
+//             // // Logic: Must be published already
+//             // query.publishDate = { $lte: now }; 
+
+//             // // Logic: Must NOT be expired (OR expiry is null)
+//             // query.$or = [
+//             //     { expiryDate: null },
+//             //     { expiryDate: { $gte: now } }
+//             // ];
+//         }
+
+//         // PARENTS / STUDENTS
+//         else if (["parent"].includes(userRole)) {
+//             // 1. Date Logic (Visible & Not Expired)
+//             // query.publishDate = { $lte: now };
+//             // query.$and = [
+//             //     { $or: [{ expiryDate: null }, { expiryDate: { $gte: now } }] }
+//             // ];
+
+//             // 2. Audience Logic
+//             // If we know the student's class, show Class Specific + All
+//             if (studentClassId) {
+//                 query.$or = [
+//                     { targetAudience: { $in: ["all", "parent"] } },
+//                     {
+//                         targetAudience: "specific_classes",
+//                         targetClasses: new mongoose.Types.ObjectId(studentClassId)
+//                     }
+//                 ];
+//             } else {
+//                 // Fallback if class not provided
+//                 query.targetAudience = { $in: ["all", "parent"] };
+//             }
+//         }
+
+//         // --- PAGINATION ---
+//         const skip = (parseInt(page) - 1) * parseInt(limit);
+
+//         const announcements = await AnnouncementModel.find(query)
+//             .sort({ createdAt: -1 }) // High priority first, then newest
+//             .skip(skip)
+//             .limit(parseInt(limit))
+//             .populate("createdBy", "userName role _id");
+
+//         const total = await AnnouncementModel.countDocuments(query);
+
+//         res.status(200).json({
+//             ok: true,
+//             data: announcements,
+//             pagination: {
+//                 total,
+//                 page: parseInt(page),
+//                 totalPages: Math.ceil(total / parseInt(limit))
+//             }
+//         });
+
+//     } catch (error) {
+//         console.error("Get Announcements Error:", error);
+//         res.status(500).json({ ok: false, message: error.message });
+//     }
+// };
+
+
+//  SECOND VERISON
+// export const getAnnouncements = async (req, res) => {
+//     try {
+//         const { schoolId, page = 1, limit = 10, classId, studentId } = req.query;
+//         const userRole = req.user?.role?.toLowerCase();
+
+//         if (!schoolId) {
+//             return res.status(400).json({ ok: false, message: "schoolId required" });
+//         }
+
+//         // --- PRE-FETCH: Get Class ID from Student ID (For Parents) ---
+//         let derivedClassId = classId;
+
+//         if (userRole === "parent" && studentId && !classId) {
+//             if (!mongoose.Types.ObjectId.isValid(studentId)) {
+//                 return res.status(400).json({ ok: false, message: "Invalid studentId format" });
+//             }
+
+//             // Find the student and get their current class
+//             const student = await StudentNewModel.findById(studentId).select("currentClassId");
+
+//             if (student && student.currentClassId) {
+//                 derivedClassId = student.currentClassId;
+//             } else {
+//                 return res.status(404).json({ ok: false, message: "Student or Class not found" });
+//             }
+//         }
+
+
+//         // --- BASE QUERY ---
+//         let query = {
+//             schoolId: new mongoose.Types.ObjectId(schoolId),
+//             // isDeleted: false // Uncomment if you use soft deletes
+//         };
+
+//         // Optional: Date Filtering (Uncomment if needed)
+//         // const now = new Date();
+//         // query.publishDate = { $lte: now }; 
+//         // query.$or = [{ expiryDate: null }, { expiryDate: { $gte: now } }];
+
+//         // =========================================================
+//         // ROLE BASED QUERY CONSTRUCTION
+//         // =========================================================
+
+//         // 1. ADMINS: See everything
+//         if (["administrator", "principal", "correspondent", "viceprincipal"].includes(userRole)) {
+//             // No additional filters needed. They see all posts for the school.
+//         }
+
+//         // 2. TEACHERS: See "all" and "teacher"
+//         else if (userRole === "teacher") {
+//             // Checks if "all" OR "teacher" exists in the targetAudience array
+//             // query.targetAudience = { $in: ["all", "teacher"] };
+
+//             const teacherScopes = ["all", "teacher"];
+
+//             if (derivedClassId) {
+//                 // Scenario: Teacher is viewing a SPECIFIC CLASS
+//                 // Show: General stuff OR Stuff specifically for this class
+//                 query.$or = [
+//                     { targetAudience: { $in: teacherScopes } },
+//                     {
+//                         targetAudience: "specific_classes",
+//                         targetClasses: new mongoose.Types.ObjectId(derivedClassId)
+//                     }
+//                 ];
+//             } else {
+//                 // Scenario: Teacher is viewing GENERAL FEED
+//                 // Show: General stuff OR ANY specific class stuff (so they are informed)
+//                 // We add "specific_classes" to the list so they can see what's being sent to students
+//                 query.targetAudience = { $in: [...teacherScopes, "specific_classes"] };
+//             }
+//         }
+
+//         // 3. PARENTS: The Critical Logic
+//         else if (userRole === "parent") {
+
+//             // Define the "General Parent" Rule (Must be 'parent' AND NOT 'specific_classes')
+//             const generalParentRule = {
+//                 $and: [
+//                     { targetAudience: "parent" },
+//                     { targetAudience: { $ne: "specific_classes" } }
+//                 ]
+//             };
+
+
+
+//             if (!derivedClassId) {
+//                 // If no class ID provided, they can ONLY see general stuff that is NOT specific
+//                 query.$or = [
+//                     { targetAudience: "all" },
+//                     {
+//                         targetAudience: "parent",
+//                         targetAudience: { $ne: "specific_classes" } // Exclude if strictly for specific classes
+//                     }
+//                 ];
+//             } else {
+//                 // If Class ID IS provided, use specific 3-step logic
+//                 query.$or = [
+//                     // A. Public Announcements
+//                     { targetAudience: "all" },
+
+//                     // B. General Parent Announcements (That are NOT specific to classes)
+//                     // If we don't exclude 'specific_classes' here, a specific post would leak through 
+//                     // just because it has the 'parent' tag.
+//                    // B. General Parent (Fixed Logic)
+//                     generalParentRule,
+
+
+//                     // C. Class Specific Announcements
+//                     // This finds docs where "specific_classes" exists AND the class ID matches
+//                     {
+//                         targetAudience: "specific_classes",
+//                         targetClasses: new mongoose.Types.ObjectId(derivedClassId)
+//                     }
+//                 ];
+//             }
+//         }
+
+//         // Fallback for unknown roles (optional security)
+//         // else {
+//         //     return res.status(403).json({ ok: false, message: "Role not authorized" });
+//         // }
+
+//         // =========================================================
+//         // EXECUTION & PAGINATION
+//         // =========================================================
+//         const skip = (parseInt(page) - 1) * parseInt(limit);
+
+//         const [announcements, total] = await Promise.all([
+//             AnnouncementModel.find(query)
+//                 .sort({ createdAt: -1 }) // Newest first
+//                 .skip(skip)
+//                 .limit(parseInt(limit))
+//                 .populate("createdBy", "userName role _id") // Populate creator details
+//                 .populate("targetClasses", "name"),
+//             AnnouncementModel.countDocuments(query)
+//         ]);
+
+
+//         res.status(200).json({
+//             ok: true,
+//             data: announcements,
+//             pagination: {
+//                 total,
+//                 page: parseInt(page),
+//                 totalPages: Math.ceil(total / parseInt(limit))
+//             }
+//         });
+
+//     } catch (error) {
+//         console.error("Get Announcements Error:", error);
+//         res.status(500).json({ ok: false, message: error.message });
+//     }
+// };
+
+
 
 export const getAnnouncements = async (req, res) => {
     try {
-        const { schoolId, page = 1, limit = 10, studentClassId } = req.query;
-        const userRole = req.user.role.toLowerCase();
+        const { schoolId, page = 1, limit = 10 } = req.query; // ONLY schoolId comes from Frontend
+        const userRole = req.user?.role?.toLowerCase();
+        const userId = req.user?._id;
 
-        if (!schoolId) return res.status(400).json({ ok: false, message: "schoolId required" });
+        console.log("userRole", userRole)
 
-        // --- BASE QUERY ---
-        let query = {
-            schoolId: new mongoose.Types.ObjectId(schoolId),
-            // isDeleted: false // 1. NEVER show deleted items
-        };
-
-        const now = new Date();
-
-        // --- ROLE BASED FILTERING ---
-
-        // ADMIN / PRINCIPAL / CORRESPONDENT
-        // They should see ALL (Active) posts, even future scheduled ones
-        if (["administrator", "principal", "correspondent"].includes(userRole)) {
-            // No extra filters needed. They see everything.
-
+        if (!schoolId) {
+            return res.status(400).json({ ok: false, message: "schoolId required" });
         }
 
-        // TEACHERS / STAFF
-        else if (["teacher"].includes(userRole)) {
-            query.targetAudience = { $in: ["all", "teacher"] };
+        // --- PRE-CALCULATION: Find Allowed Class IDs ---
+        // We will populate this array based on whether it's a Teacher (assignments) or Parent (children)
+        let allowedClassIds = [];
 
-            // // Logic: Must be published already
-            // query.publishDate = { $lte: now }; 
+        if (userRole === "teacher") {
+            // 1. Fetch Teacher's Assignments
+            const teacherUser = await UserModel.findById(userId).select("assignments");
+            
+            if (teacherUser?.assignments?.length > 0) {
+                // Extract classId from every assignment object
+                allowedClassIds = teacherUser.assignments
+                    .map(a => a.classId)
+                    .filter(id => id); // Remove nulls/undefined
+            }
+        } 
+        else if (userRole === "parent") {
+            // 1. Fetch Parent's Student IDs
+            const parentUser = await UserModel.findById(userId).select("studentId");
 
-            // // Logic: Must NOT be expired (OR expiry is null)
-            // query.$or = [
-            //     { expiryDate: null },
-            //     { expiryDate: { $gte: now } }
-            // ];
-        }
+            console.log("parentUser", parentUser)
+            if (parentUser?.studentId?.length > 0) {
+                // 2. Fetch the actual Student documents to get their Classes
+                const students = await StudentNewModel.find({
+                    _id: { $in: parentUser.studentId }
+                }).select("currentClassId");
 
-        // PARENTS / STUDENTS
-        else if (["parent"].includes(userRole)) {
-            // 1. Date Logic (Visible & Not Expired)
-            // query.publishDate = { $lte: now };
-            // query.$and = [
-            //     { $or: [{ expiryDate: null }, { expiryDate: { $gte: now } }] }
-            // ];
 
-            // 2. Audience Logic
-            // If we know the student's class, show Class Specific + All
-            if (studentClassId) {
-                query.$or = [
-                    { targetAudience: { $in: ["all", "parent"] } },
-                    {
-                        targetAudience: "specific_classes",
-                        targetClasses: new mongoose.Types.ObjectId(studentClassId)
-                    }
-                ];
-            } else {
-                // Fallback if class not provided
-                query.targetAudience = { $in: ["all", "parent"] };
+            console.log("students", students)
+
+                // 3. Extract class IDs from the students
+                allowedClassIds = students
+                    .map(s => s.currentClassId)
+                    .filter(id => id); // Remove nulls/undefined
+
+            console.log("allowedClassIds", allowedClassIds)
+            
             }
         }
 
-        // --- PAGINATION ---
+        // --- QUERY CONSTRUCTION ---
+        let query = {
+            schoolId: new mongoose.Types.ObjectId(schoolId),
+        };
+
+        // =========================================================
+        // ROLE BASED FILTERS
+        // =========================================================
+
+        // A. ADMINS (See Everything)
+        if (["administrator", "principal", "correspondent", "viceprincipal"].includes(userRole)) {
+            // No extra filters needed.
+        }
+
+        // B. TEACHERS
+        else if (userRole === "teacher") {
+            query.$or = [
+                // 1. General Teacher Announcements
+                { targetAudience: { $in: ["all", "teacher"] } },
+                
+                // 2. Class Specific Announcements (Matches ANY class in their assignments)
+                {
+                    targetAudience: "specific_classes",
+                    targetClasses: { $in: allowedClassIds } 
+                }
+            ];
+        }
+
+        // C. PARENTS
+        else if (userRole === "parent") {
+            
+            // Logic: Must match "parent" AND NOT be "specific_classes" to be considered General
+            const generalParentRule = {
+                $and: [
+                    { targetAudience: "parent" },
+                    { targetAudience: { $ne: "specific_classes" } }
+                ]
+            };
+
+            // Logic:
+            // 1. Public (All)
+            // 2. General Parent News
+            // 3. Specific Class News (Matches ANY of their children's classes)
+            query.$or = [
+                { targetAudience: "all" },
+                generalParentRule,
+                {
+                    targetAudience: "specific_classes",
+                    targetClasses: { $in: allowedClassIds }
+                }
+            ];
+        }
+        
+        // D. FALLBACK
+        else {
+             return res.status(403).json({ ok: false, message: "Access Denied: Unknown Role" });
+        }
+
+        // =========================================================
+        // EXECUTION
+        // =========================================================
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
-        const announcements = await AnnouncementModel.find(query)
-            .sort({ createdAt: -1 }) // High priority first, then newest
-            .skip(skip)
-            .limit(parseInt(limit))
-            .populate("createdBy", "userName role _id");
-
-        const total = await AnnouncementModel.countDocuments(query);
+        const [announcements, total] = await Promise.all([
+            AnnouncementModel.find(query)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(parseInt(limit))
+                .populate("createdBy", "userName role _id")
+                .populate("targetClasses", "name _id"), // Shows "Class 10-A", etc.
+            AnnouncementModel.countDocuments(query)
+        ]);
 
         res.status(200).json({
             ok: true,
@@ -259,13 +560,11 @@ export const getAnnouncements = async (req, res) => {
     }
 };
 
-
-
 export const getAnnouncementById = async (req, res) => {
     try {
         const { id } = req.params;
-        const { studentClassId } = req.query; // Required for Parent/Student validation
-        const userRole = req?.user?.role.toLowerCase();
+        // const { classId } = req.query; // Required for Parent/Student validation
+        // const userRole = req?.user?.role.toLowerCase();
 
         // 1. Validate ID
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -282,70 +581,72 @@ export const getAnnouncementById = async (req, res) => {
             return res.status(404).json({ ok: false, message: "Announcement not found" });
         }
 
-        // If deleted, it's 404 for everyone (unless you want Admins to see deleted ones)
-        // if (announcement.isDeleted) {
-        //     return res.status(404).json({ ok: false, message: "Announcement not found (Deleted)" });
-        // }
-
         // =========================================================
         // ACCESS CONTROL LOGIC
         // =========================================================
 
-        const isAdminLevel = ["correspondent", "principal", "viceprincipal", "administrator"].includes(userRole);
+        // const isAdminLevel = ["correspondent", "principal", "viceprincipal", "administrator"].includes(userRole);
 
-        // A. ADMINS: Can see everything. Skip checks.
-        if (isAdminLevel) {
-            return res.status(200).json({ ok: true, data: announcement });
-        }
-
-        // B. STANDARD USERS (Teachers, Parents, Students): Needs checks.
-        // const now = new Date();
-
-        // // Check 1: Is it Published?
-        // if (new Date(announcement.publishDate) > now) {
-        //     return res.status(403).json({ ok: false, message: "This announcement is not published yet." });
+        // // A. ADMINS: Can see everything. Skip checks.
+        // if (isAdminLevel) {
+        //     return res.status(200).json({ ok: true, data: announcement });
         // }
 
-        // // Check 2: Is it Expired?
-        // if (announcement.expiryDate && new Date(announcement.expiryDate) < now) {
-        //     return res.status(403).json({ ok: false, message: "This announcement has expired." });
+
+        // // Check 3: Audience Validation
+        // // const audience = announcement.targetAudience;
+
+        // // Ensure audience is always an array (handles cases where DB might return a string or array)
+        // const audience = Array.isArray(announcement.targetAudience)
+        //     ? announcement.targetAudience
+        //     : [announcement.targetAudience];
+
+
+        // if (userRole === "teacher") {
+        //     // Teachers can see "ALL" and "STAFF"
+        //     const isAllowed = audience.some(role => ["all", "teacher"].includes(role));
+
+        //     if (!isAllowed) {
+        //         return res.status(403).json({ ok: false, message: "Access Denied. This is not for teachers." });
+        //     }
         // }
+        // else if (userRole === "parent") {
+        //     // Parents/Students can see "ALL", "PARENTS", "STUDENTS"
+        //     const allowedGeneral = ["all", "parent"];
 
-        // Check 3: Audience Validation
-        const audience = announcement.targetAudience;
+        //     if (audience.includes("specific_classes")) {
+        //         // Must provide classId to verify access
+        //         if (!classId) {
+        //             return res.status(400).json({
+        //                 ok: false,
+        //                 message: "classId is required to view class-specific announcements."
+        //             });
+        //         }
 
-        if (userRole === "teacher") {
-            // Teachers can see "ALL" and "STAFF"
-            if (!["all", "teacher"].includes(audience)) {
-                return res.status(403).json({ ok: false, message: "Access Denied. This is not for teachers." });
-            }
-        }
-        else if (userRole === "parent") {
-            // Parents/Students can see "ALL", "PARENTS", "STUDENTS"
-            const allowedGeneral = ["all", "parent"];
+        //         // Check if the announcement's targetClasses includes the student's class
+        //         // const isClassTargeted = announcement.targetClasses.some(
+        //         //     cls => cls._id.toString() === classId
+        //         // );
 
-            if (audience === "specific_classes") {
-                // Must provide studentClassId to verify access
-                if (!studentClassId) {
-                    return res.status(400).json({
-                        ok: false,
-                        message: "studentClassId is required to view class-specific announcements."
-                    });
-                }
+        //         const isClassTargeted = announcement.targetClasses.some(cls => {
+        //             const clsId = cls._id ? cls._id.toString() : cls.toString();
+        //             return clsId === classId;
+        //         });
 
-                // Check if the announcement's targetClasses includes the student's class
-                const isClassTargeted = announcement.targetClasses.some(
-                    cls => cls._id.toString() === studentClassId
-                );
+        //         if (!isClassTargeted) {
+        //             return res.status(403).json({ ok: false, message: "This announcement is not for your class." });
+        //         }
+        //     }
+        //     // else if(!allowedGeneral.includes(audience)) {
+        //     else {
+        //         // return res.status(403).json({ ok: false, message: "Access Denied." });
+        //         const hasGeneralAccess = audience.some(role => allowedGeneral.includes(role));
 
-                if (!isClassTargeted) {
-                    return res.status(403).json({ ok: false, message: "This announcement is not for your class." });
-                }
-            }
-            else if (!allowedGeneral.includes(audience)) {
-                return res.status(403).json({ ok: false, message: "Access Denied." });
-            }
-        }
+        //         if (!hasGeneralAccess) {
+        //             return res.status(403).json({ ok: false, message: "Access Denied." });
+        //         }
+        //     }
+        // }
 
         // If all checks pass:
         res.status(200).json({

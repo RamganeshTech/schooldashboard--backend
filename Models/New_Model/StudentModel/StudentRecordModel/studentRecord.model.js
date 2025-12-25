@@ -16,6 +16,7 @@ const StudentRecordSchema = mongoose.Schema({
     // === REFERENCES ===
     schoolId: { type: mongoose.Schema.Types.ObjectId, ref: "SchoolModel", default: null },
     studentId: { type: mongoose.Schema.Types.ObjectId, ref: "StudentNewModel", default: null },
+    studentName: { type: String },
 
     // === TIME CONTEXT (The Critical Field) ===
     academicYear: { type: String, required: true }, // e.g., "2025-2026"
@@ -29,7 +30,7 @@ const StudentRecordSchema = mongoose.Schema({
     sectionName: { type: String, default: null }, // "A" or "N/A"
 
     // === ENROLLMENT STATUS ===
-    newOld: { type: String,  }, // "New" or "Old" (Specific to this year)
+    newOld: { type: String, }, // "New" or "Old" (Specific to this year)
     rollNumber: { type: String, default: null },
 
     // === FINANCIALS: FEE STRUCTURE (Targets) ===

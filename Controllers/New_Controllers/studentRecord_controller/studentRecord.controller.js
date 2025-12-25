@@ -38,7 +38,7 @@ export const collectFeeAndManageRecord = async (req, res) => {
 
     try {
         const {
-            schoolId, studentId, classId, sectionId,
+            schoolId, studentId, studentName, classId, sectionId,
             amount, paymentMode, cashDenominations,
             referenceNumber, bankName, chequeDate, remarks,
             // Configuration
@@ -115,6 +115,7 @@ export const collectFeeAndManageRecord = async (req, res) => {
             studentRecord = new StudentRecordModel({
                 schoolId, studentId, academicYear: currentYear,
                 classId, sectionId: sectionId || null,
+                studentName: studentName || null,
                 className: cDoc.name, sectionName: sName,
                 isActive: true,
                 newOld: newOld || "New",
@@ -526,7 +527,7 @@ export const revertFeeTransaction = async (req, res) => {
             throw new Error("Invalid status. Allowed: cancelled, bounced");
         }
 
-       
+
 
 
         // 2. Fetch Transaction
@@ -538,7 +539,7 @@ export const revertFeeTransaction = async (req, res) => {
             throw new Error("Transaction is already reverted/cancelled.");
         }
 
-         // *** NEW LOGIC STARTS HERE ***
+        // *** NEW LOGIC STARTS HERE ***
         // If status is bounced, we store the penalty amount in the receipt
         if (status.toLowerCase() === "bounced") {
             if (penaltyAmount) {
@@ -671,6 +672,7 @@ export const applyConcession = async (req, res) => {
             studentId,
             concessionType,
             remark,
+            studentName,
             // Optional fields (for creation)
             classId, //needed if yure going to create the studnet newly for the first time
             sectionId,
@@ -882,6 +884,7 @@ export const applyConcession = async (req, res) => {
                 newOld: targetNewOld,
                 isBusApplicable: targetIsBus, // Ensure this is saved
                 isActive: true,
+                studentName: studentName || null,
 
                 feeStructure: newStructure,
                 feePaid: { admissionFee: 0, firstTermAmt: 0, secondTermAmt: 0, busFirstTermAmt: 0, busSecondTermAmt: 0 },
@@ -1089,125 +1092,136 @@ export const uploadConcessionProof = async (req, res) => {
 };
 
 
-//  EXAMPLE OF COLLECTION PAYLOAD FROM THE FRONTEND 
 
-// if you need to mention the paidHeads then you need to send the value as manualDueAllocation:true,
-//  if youre not passing or if it is false then it will be allocating the fee amount automatically to fields
-//  please send teh classId , sectionId adn teh schoolId and the studnetId in every request, if not then the data will lost
+export const getAllStudentRecords = async (req, res) => {
+    try {
+        const {
+            // 1. Basics
+            schoolId,
+            page = 1,
+            limit = 10,
+            search,         // Matches Name OR RollNo
 
+            // 2. Context Filters
+            academicYear,   // "2025-2026"
+            classId,
+            sectionId,
 
-// amount is the total amount that is paid
+            // 3. Status Filters
+            newOld,         // "New" or "Old"
+            isActive,       // true/false
+            
+            // 4. Financial/Feature Filters
+            isBusApplicable, // true/false
+            isFullyPaid,     // true/false
+            hasConcession,   // true/false
+            hasBusPoint      // true/false (Checks if busPoint is set)
 
-//  if the type is payment mode is cash then you need to send the cashDenomination field also where the label adn the value should be matching the amount field 
-// send the referenceNumber and the chequeDate if the payemnt mode is cheque
+        } = req.query;
 
-// And if the concession is already applied then it will be reduced from the fee structure, so the data which is going to modify is the feePaid object only
-//  the dues object and the feeStructure object is calculated internally, so dont get confused in those object
+        // --- VALIDATION ---
+        if (!schoolId) {
+            return res.status(400).json({ ok: false, message: "schoolId is required" });
+        }
 
-// isBusApplicable should be true if we need to update the bus first terma nd the bus second term fee amount also 
+        // --- BASE QUERY ---
+        let query = {
+            schoolId: new mongoose.Types.ObjectId(schoolId)
+        };
 
+        // --- 1. SEARCH LOGIC (Name OR Roll Number) ---
+        if (search) {
+            // Create a case-insensitive Regex
+            const searchRegex = new RegExp(search, "i");
+            
+            query.$or = [
+                { studentName: searchRegex }, // Matches name
+                { rollNumber: searchRegex }   // Matches roll number (e.g. "101")
+            ];
+        }
 
-// NOTE: The currentAcademicYear field in the schoolModel is the deciding factor that whether the studnet data is need to be created aas new record or not for that particualr academic year
+        // --- 2. CONTEXT FILTERS ---
+        if (academicYear) {
+            query.academicYear = academicYear;
+        }
+        if (classId) {
+            query.classId = new mongoose.Types.ObjectId(classId);
+        }
+        if (sectionId) {
+            query.sectionId = new mongoose.Types.ObjectId(sectionId);
+        }
 
+        // --- 3. STATUS FILTERS ---
+        if (newOld) {
+            query.newOld = newOld; // "New" or "Old"
+        }
+        
+        // Handle Boolean strings coming from Query Params
+        if (isActive !== undefined) {
+            query.isActive = isActive === 'true';
+        }
 
-//  BELOW ARE SOME OF THE DIFFERENT TYPES OF THE SCENARIO EXAMPLE
+        // --- 4. FINANCIAL / FEATURE FILTERS ---
+        if (isBusApplicable !== undefined) {
+            query.isBusApplicable = isBusApplicable === 'true';
+        }
 
-// SCENARIO 1: PAYING THROUGH THE CHEQUE WITH THE MANUAL SELECTION OF THE AMOUNT, THE AMOUTN IS ONLY PAID TO SECONDTERMAMT
+        if (isFullyPaid !== undefined) {
+            query.isFullyPaid = isFullyPaid === 'true';
+        }
 
-// {
-//   "schoolId": "6942923ab194c60dc810cc6b",
-//   "studentId": "69450a91db9ab895d44128d3",
-//   "classId": "6942a94da9deee103814fba0",
-//   "sectionId": "6943a30b65f72f3b5201c7a7",
+        if (hasConcession !== undefined) {
+            const wantsConcession = hasConcession === 'true';
+            // Check nested field concession.isApplied
+            query["concession.isApplied"] = wantsConcession;
+        }
 
-//   "amount": 10000,
-//    // 1. PAYMENT MODE (How money comes in)
-//   "paymentMode": "cheque",
-//   "referenceNumber": "CHQ-123456",
-//   "bankName": "SBI",
+        if (hasBusPoint !== undefined) {
+            if (hasBusPoint === 'true') {
+                query.busPoint = { $ne: null }; // Bus Point exists
+            } else {
+                query.busPoint = null; // Bus Point is empty
+            }
+        }
 
-//   // 2. ALLOCATION MODE (Where money goes)
-//   "manualDueAllocation": true,  // <--- MANDATORY for Manual
-//   "paidHeads": {
-//       "secondTermAmt": 10000    // <--- MANDATORY for Manual
-//   },
+        // --- 5. PAGINATION SETUP ---
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+        const skip = (pageNum - 1) * limitNum;
 
-//   "chequeDate": "2025-12-25",
+        // --- 6. EXECUTION ---
+        const [records, total] = await Promise.all([
+            StudentRecordModel.find(query)
+                .sort({ 
+                    classId: 1,      // Group by Class
+                    sectionId: 1,    // Then by Section
+                    studentName: 1   // Then Alphabetical
+                })
+                .skip(skip)
+                .limit(limitNum)
+                // Populate studentId to get the Image/Avatar which is in the main profile
+                .populate("studentId", "studentImage studentName srId"), 
+            
+            StudentRecordModel.countDocuments(query)
+        ]);
 
-//   "remarks": "Full First Term Fee via Cheque"
-// }
+        // --- 7. RESPONSE ---
+        res.status(200).json({
+            ok: true,
+            data: records,
+            pagination: {
+                total,
+                page: pageNum,
+                limit: limitNum,
+                totalPages: Math.ceil(total / limitNum)
+            }
+        });
 
-
-
-//  SCENARIO 2: THE AMOUNT IS PAID AUTOMATICALLY IN CHEQUE
-
-// {
-//   "schoolId": "6942923ab194c60dc810cc6b",
-//   "studentId": "69450a91db9ab895d44128d3",
-//   "classId": "6942a94da9deee103814fba0",
-//   "sectionId": "6943a30b65f72f3b5201c7a7",
-
-//   "amount": 20000,
-//   "paymentMode": "cheque",
-
-//   // Bank Details Mandatory for Cheque
-//   "referenceNumber": "CHQ-998877",
-//   "bankName": "HDFC Bank",
-//   "chequeDate": "2025-12-25",
-
-//   "remarks": "Full First Term Fee via Cheque"
-// }
-
-
-
-// SCENARIO 3: THE AMOUNT IS PAID TO SECOND TERM AMT FIELD , BY paymentMode:"cash"
-
-// {
-//   "schoolId": "6942923ab194c60dc810cc6b",
-//   "studentId": "69450a91db9ab895d44128d3",
-//   "classId": "6942a94da9deee103814fba0",
-//   "sectionId": "6943a30b65f72f3b5201c7a7",
-
-//   "amount": 5000,
-//   "paymentMode": "cash",
-
-//   "cashDenominations": [
-//     { "label": "2000", "count": 2 },
-//     { "label": "500", "count": 2 }
-//   ],
-
-//   "manualDueAllocation": true,
-//   "paidHeads": {
-//       "secondTermAmt": 5000
-//   },
-
-//   "remarks": "Advance payment for Term 2"
-// }
-
-
-//  SCENARIO 4: The amount is payed to the first termAmount even , but make sure it is not exceeding the amount of feeStructure
-// {
-//   "schoolId": "6942923ab194c60dc810cc6b",  // jaihind school
-//   "studentId": "69450a91db9ab895d44128d3", //lakshaya
-//   "classId": "6942a94da9deee103814fba0",  //lkg
-
-//   "amount": 5000,
-//   "paymentMode": "cash",
-
-//   "cashDenominations": [
-//     { "label": "500", "count": 10 }
-//   ],
-
-//   "manualDueAllocation": true,
-//   // SPECIFY WHERE MONEY GOES
-//   "paidHeads": {
-//       "firstTermAmt": 5000
-//   },
-
-// isBusApplicable:true
-//   "remarks": "paid for first term"
-// }
-
+    } catch (error) {
+        console.error("Get All Student Records Error:", error);
+        res.status(500).json({ ok: false, message: error.message });
+    }
+};
 
 
 export const getStudentRecordById = async (req, res) => {
@@ -1285,16 +1299,21 @@ export const deleteStudentRecord = async (req, res) => {
         }
 
         // 1. Find the Record
-        const record = await StudentRecordModel.findById(id).session(session);
-        if (!record) {
-            return res.status(404).json({ ok: false, message: "Student Record not found" });
-        }
+        // const record = await StudentRecordModel.findById(id).session(session);
+        // if (!record) {
+        //     return res.status(404).json({ ok: false, message: "Student Record not found" });
+        // }
 
         // // 2. Delete All Linked Receipts (Transactions)
         // await FeeTransactionModel.deleteMany({ recordId: id }).session(session);
 
         // // 3. Delete the Record itself
-        const studentRecord = await StudentRecordModel.findByIdAndDelete(id).session(session);
+        const studentRecord = await StudentRecordModel.findByIdAndDelete(id)
+        // .session(session);
+
+        if (!studentRecord) {
+            return res.status(404).json({ ok: false, message: "Student Record not found" });
+        }
 
         // // NOTE: We do NOT delete the Student Profile (StudentNewModel)
         // // because the student might have records in other years.
@@ -1309,17 +1328,18 @@ export const deleteStudentRecord = async (req, res) => {
             reason: null, // Optional reason from body
         });
 
-        await session.commitTransaction();
-        session.endSession();
+        // await session.commitTransaction();
+        // session.endSession();
 
         return res.status(200).json({
             ok: true,
+            data: studentRecord,
             message: "Student Fee Record deleted successfully."
         });
 
     } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
+        // await session.abortTransaction();
+        // session.endSession();
         console.error("Delete Record Error:", error);
         return res.status(500).json({ ok: false, message: "Internal server error", error: error.message });
     }

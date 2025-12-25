@@ -1,8 +1,14 @@
 import express from "express";
-import { applyConcession, collectFeeAndManageRecord, deleteStudentRecord, getStudentRecordById, revertFeeTransaction, toggleStudentRecordStatus, updateConcessionDetails, uploadConcessionProof } from "../../../../Controllers/New_Controllers/studentRecord_controller/studentRecord.controller.js";
+import { applyConcession, collectFeeAndManageRecord, deleteStudentRecord,
+   getAllStudentRecords,
+   getStudentRecordById, revertFeeTransaction,
+   toggleStudentRecordStatus, updateConcessionDetails,
+    uploadConcessionProof 
+  } from "../../../../Controllers/New_Controllers/studentRecord_controller/studentRecord.controller.js";
 // import { upload } from "../../../../Utils/s3upload.js";
 import { multiRoleAuth } from "../../../../Middleware/multiRoleRequest.js";
 import { upload } from "../../../../Utils/s4UploadsNew.js";
+import { assignStudentToClass, removeStudentFromClass } from "../../../../Controllers/New_Controllers/studentRecord_controller/assignStudentClass.controller.js";
 
 const studentRecordRoutes = express.Router();
 
@@ -77,6 +83,34 @@ studentRecordRoutes.put(
   multiRoleAuth("correspondent", "accountant", "principal"),
   revertFeeTransaction
 );
+
+studentRecordRoutes.get(
+  "/getall",
+  multiRoleAuth("correspondent", "accountant", "principal", "administrator", "viceprincipal"),
+  getAllStudentRecords
+);
+
+
+
+
+//  assing the studnet to class or remove the student from class
+
+
+studentRecordRoutes.put(
+  "/assign",
+  multiRoleAuth("correspondent", "administrator"),
+  assignStudentToClass
+);
+
+
+
+
+studentRecordRoutes.put(
+  "/remove",
+  multiRoleAuth("correspondent", "administrator"),
+  removeStudentFromClass
+);
+
 
 
 
