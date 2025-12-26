@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { FinanceLedgerModel } from "../../../Models/New_Model/financeLedger_model/financeLedger.model.js";
 import StudentRecordModel from "../../../Models/New_Model/StudentModel/StudentRecordModel/studentRecord.model.js";
+import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 
 export const createLedgerEntry = async ({
     schoolId,
