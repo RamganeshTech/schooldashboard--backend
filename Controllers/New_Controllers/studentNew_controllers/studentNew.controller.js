@@ -7,6 +7,7 @@ import UserModel from "../../../Models/New_Model/UserModel/userModel.model.js";
 import { isValidPhone } from "../../../Utils/basicValidation.js";
 // import { uploadImageToS3 } from "../../../Utils/s3upload.js";
 import { uploadFileToS3New } from "../../../Utils/s4UploadsNew.js";
+import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
 
 // ==========================================
@@ -124,6 +125,15 @@ export const createStudentProfile = async (req, res) => {
             }
         }
 
+
+        await createAuditLog(req, {
+            action: "create",
+            module: "student",
+            targetId: newStudent._id,
+            description: `student created (${newStudent._id})`,
+            status: "success"
+        });
+
         return res.status(201).json({
             ok: true,
             message: "Student profile created successfully",
@@ -239,6 +249,15 @@ export const updateStudent = async (req, res) => {
             }
         }
 
+        await createAuditLog(req, {
+            action: "edit",
+            module: "student",
+            targetId: updatedStudent._id,
+            description: `student updated (${updatedStudent._id})`,
+            status: "success"
+        });
+
+
         return res.status(200).json({
             ok: true,
             message: "Student updated successfully",
@@ -275,6 +294,14 @@ export const deleteStudent = async (req, res) => {
             reason: null, // Optional reason from body
         });
 
+
+        await createAuditLog(req, {
+            action: "delete",
+            module: "student",
+            targetId: id,
+            description: `student deleted (soft delete) (${id})`,
+            status: "success"
+        });
 
         // TODO: Ideally, you should also delete related FeeRecords here to clean up.
         // await StudentRecordModel.deleteMany({ studentId: id });
@@ -423,6 +450,14 @@ export const assignStudentToParent = async (req, res) => {
             });
         }
 
+         await createAuditLog(req, {
+            action: "edit",
+            module: "user",
+            targetId: parentId,
+            description: `student assinged to parent user (${parentId})`,
+            status: "success"
+        });
+
         console.log("66666666666", updatedParent)
 
         res.status(200).json({ ok: true, data: updatedParent, message: `Link Success, Student linked to Parent ${updatedParent.userName}` });
@@ -449,7 +484,7 @@ export const removeStudentFromParent = async (req, res) => {
         // 2. Database Operation: REMOVE the ID
         // $pull: Removes all instances of a value from an existing array.
         const updatedParent = await UserModel.findByIdAndUpdate(
-           parentId,
+            parentId,
             {
                 $pull: { studentId: studentId } // <--- THIS IS THE KEY CHANGE
                 // $pull: { studentId: new mongoose.Types.ObjectId(studentId) } 
@@ -465,6 +500,15 @@ export const removeStudentFromParent = async (req, res) => {
                 message: "No user found with this mobile number."
             });
         }
+
+         await createAuditLog(req, {
+            action: "edit",
+            module: "user",
+            targetId: parentId,
+            description: `student removed from parent user (${parentId})`,
+            status: "success"
+        });
+
 
         console.log("Student Removed. Updated Parent:", updatedParent);
 

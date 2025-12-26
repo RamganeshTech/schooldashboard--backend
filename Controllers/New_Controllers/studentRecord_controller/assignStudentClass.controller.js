@@ -3,6 +3,7 @@ import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model.
 import StudentRecordModel from "../../../Models/New_Model/StudentModel/StudentRecordModel/studentRecord.model.js";
 import StudentNewModel from "../../../Models/New_Model/StudentModel/studentNew.model.js";
 import FeeStructureModel from "../../../Models/New_Model/FeeStructureModel/FeeStructure.model.js";
+import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 
 export const assignStudentToClass = async (req, res) => {
     try {
@@ -12,8 +13,7 @@ export const assignStudentToClass = async (req, res) => {
 
         // 1. Validate Required Fields
         if (!schoolId || !studentId || !classId) {
-            return res.statu
-            s(400).json({ ok: false, message: "schoolId, studentId, and classId are required." });
+            return res.status(400).json({ ok: false, message: "schoolId, studentId, and classId are required." });
         }
 
         // 2. Determine Academic Year
@@ -200,6 +200,14 @@ export const assignStudentToClass = async (req, res) => {
             }
         );
 
+        await createAuditLog(req, {
+            action: "edit",
+            module: "student_record",
+            targetId: studentId,
+            description: `student assinging to class (${studentId})`,
+            status: "success"
+        });
+
         res.status(200).json({
             ok: true,
             message: "Student assigned to class successfully.",
@@ -305,6 +313,14 @@ export const removeStudentFromClass = async (req, res) => {
                 }
             );
         }
+
+           await createAuditLog(req, {
+            action: "edit",
+            module: "student_record",
+            targetId: studentId,
+            description: `student removed from the class (${studentId})`,
+            status: "success"
+        });
 
         res.status(200).json({
             ok: true,

@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model.js";
 import AttendanceModel from "../../../Models/New_Model/attendance_model/attendance.model.js";
 import StudentRecordModel from "../../../Models/New_Model/StudentModel/StudentRecordModel/studentRecord.model.js";
+import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 
 
 const getMidnightDate = (dateString) => {
@@ -195,6 +196,15 @@ export const markAttendance = async (req, res) => {
                 corrections: []
             });
         }
+
+          await createAuditLog(req, {
+                    action: "create",
+                    module: "attendance",
+                    targetId: attendanceDoc._id,
+                    description: `attendance marked (${attendanceDoc._id})`,
+                    status: "success"
+                });
+        
 
        
 

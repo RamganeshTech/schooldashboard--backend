@@ -5,12 +5,13 @@ import { isValidEmail, isValidPhone } from "../../../Utils/basicValidation.js";
 import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model.js";
 import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
 import StudentNewModel from "../../../Models/New_Model/StudentModel/studentNew.model.js";
+import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 
 const JWT_SECRET = process.env.JWT_SECRET // store in env
 
 export const createUser = async (req, res) => {
   try {
-    const { email, userName, password, phoneNo,schoolCode,
+    const { email, userName, password, phoneNo, schoolCode,
       //  role, 
       isPlatformAdmin = false } = req.body;
 
@@ -201,7 +202,18 @@ export const createUser = async (req, res) => {
     delete userResponse.password;
 
 
-    console.log("newuser", newUser)
+    // console.log("newuser", newUser)
+
+    if (req && req?.user) {
+      await createAuditLog(req, {
+        action: "create",
+        module: "user",
+        targetId: newUser._id,
+        description: `user created (${newUser._id})`,
+        status: "success"
+      });
+
+    }
 
     return res.status(201).json({
       message: "User created successfully",
@@ -248,9 +260,11 @@ export const loginUser = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { _id: user._id, role: user?.role || null, userName: user?.userName, 
+      {
+        _id: user._id, role: user?.role || null, userName: user?.userName,
         email: user.email, phoneNo: user.phoneNo,
-         isPlatformAdmin: user?.isPlatformAdmin || false, schoolId: user.schoolId },
+        isPlatformAdmin: user?.isPlatformAdmin || false, schoolId: user.schoolId
+      },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -375,6 +389,14 @@ export const deleteUser = async (req, res) => {
       });
     }
 
+    await createAuditLog(req, {
+      action: "delete",
+      module: "user",
+      targetId: isExist._id,
+      description: `user deleted (${isExist._id})`,
+      status: "success"
+    });
+
     return res.status(201).json({
       message: "User deleted successfully",
       user: isExist,
@@ -458,6 +480,14 @@ export const updateUser = async (req, res) => {
       return res.status(404).json({ ok: false, message: "User not found" });
     }
 
+    await createAuditLog(req, {
+      action: "edit",
+      module: "user",
+      targetId: updatedUser._id,
+      description: `user edit (${updatedUser._id})`,
+      status: "success"
+    });
+
     return res.status(200).json({
       ok: true,
       message: "User updated successfully",
@@ -493,7 +523,7 @@ export const assignRolesToUser = async (req, res) => {
 
     const allowedRoles = ["correspondent", "teacher", "principal", "viceprincipal", "administrator", "parent", "accountant"]
 
-    console.log("allowedRoles", allowedRoles)
+    // console.log("allowedRoles", allowedRoles)
     if (!allowedRoles.includes(role)) {
       return res.status(400).json({ ok: false, message: `22222  role not allowed, only ${allowedRoles.join(", ")} are allowed` });
 
@@ -509,6 +539,14 @@ export const assignRolesToUser = async (req, res) => {
     if (!updatedUser) {
       return res.status(404).json({ ok: false, message: "User not found" });
     }
+
+     await createAuditLog(req, {
+      action: "edit",
+      module: "user",
+      targetId: updatedUser._id,
+      description: `${role} assinged to user  (${updatedUser._id})`,
+      status: "success"
+    });
 
     return res.status(200).json({
       ok: true,

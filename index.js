@@ -37,6 +37,7 @@ import annoucementRoutes from './Routes/New_Routes/announcement_routes/annouceme
 import clubRoutes from './Routes/New_Routes/club_routes/club.routes.js';
 import auditRoutes from './Routes/New_Routes/audit_routes/audit.routes.js';
 import feeReceiptRoutes from './Routes/New_Routes/feeTrasaction_receipt_routes/feeTrasactionReceipt.routes.js';
+import subscriptionRoutes from './Routes/New_Routes/subscription_routes/subscription.routes.js';
 
 
 dotenv.config({ path: '.env.production' });
@@ -72,13 +73,13 @@ app.use('/api/fee/receipt', feeReceiptRoutes)
 
 app.use('/api/expense', expenseRoutes)
 app.use('/api/announcement', annoucementRoutes)
-
 app.use('/api/club', clubRoutes);
 
 // not mentioned in the docuemntation
 app.use('/api/financeledger', financeRoutes)
 app.use('/api/deletearchive', deleteArchiveRoutes)
 app.use('/api/audit', auditRoutes)
+app.use('/api/subscription', subscriptionRoutes)
 // not mentioned in the docuemntation
 
 

@@ -3,6 +3,7 @@
 
 import { ClubMainModel, ClubVideoModel } from "../../../Models/New_Model/club_model/club.model.js";
 import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model.js";
+import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 import { formatUploadData } from "./club.controller.js";
 
 // ==========================================
@@ -49,6 +50,14 @@ export const createClubVideo = async (req, res) => {
             uploadedBy: req.user._id
         });
 
+        await createAuditLog(req, {
+            action: "create",
+            module: "club",
+            targetId: savedVideos._id,
+            description: `video uploaded in club (${savedVideos._id})`,
+            status: "success"
+        });
+
         res.status(201).json({
             ok: true, message: `${savedVideos.length} videos uploaded successfully`,
             data: savedVideos
@@ -56,7 +65,7 @@ export const createClubVideo = async (req, res) => {
 
     } catch (error) {
         console.error("Upload Video Error:", error);
-        res.status(500).json({ok: false, message: "Server error while uploading videos" });
+        res.status(500).json({ ok: false, message: "Server error while uploading videos" });
     }
 };
 
@@ -91,6 +100,14 @@ export const updateClubVideoFile = async (req, res) => {
 
         // Optional: You could delete the OLD video from S3 here using existingVideo.video.key
         // to save storage costs, but that depends on your preference.
+
+        await createAuditLog(req, {
+            action: "edit",
+            module: "club",
+            targetId: updatedVideo._id,
+            description: `new video got updated in club (${updatedVideo._id})`,
+            status: "success"
+        });
 
         res.status(200).json({
             ok: true, message: "Video file updated successfully",
@@ -153,7 +170,7 @@ export const getAllClubVideos = async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching videos:", error);
-        res.status(500).json({ ok: false,message: "Error fetching videos" });
+        res.status(500).json({ ok: false, message: "Error fetching videos" });
     }
 };
 // ==========================================
@@ -166,13 +183,13 @@ export const getClubVideoById = async (req, res) => {
         const video = await ClubVideoModel.findById(id).populate('clubId', 'name description');
 
         if (!video) {
-            return res.status(404).json({ ok: false,message: "Video not found" });
+            return res.status(404).json({ ok: false, message: "Video not found" });
         }
 
-        res.status(200).json({ ok: true,data: video });
+        res.status(200).json({ ok: true, data: video });
 
     } catch (error) {
-        res.status(500).json({ok: false, message: "Error fetching video details" });
+        res.status(500).json({ ok: false, message: "Error fetching video details" });
     }
 };
 
@@ -187,14 +204,14 @@ export const updateClubVideoDetails = async (req, res) => {
         // We specifically DO NOT check for req.file here.
         // Even if a file is sent, it is ignored.
 
-            // 1. Create a dynamic update object
+        // 1. Create a dynamic update object
         const updateFields = {};
 
         // 2. Only add fields if they are provided (not undefined/null)
         if (title) updateFields.title = title;
         if (topic) updateFields.topic = topic;
         if (level) updateFields.level = level;
-        
+
         // This solves your specific requirement:
         // academicYear is only added to the update if it exists in req.body
         if (academicYear) {
@@ -211,8 +228,16 @@ export const updateClubVideoDetails = async (req, res) => {
         );
 
         if (!updatedVideo) {
-            return res.status(404).json({ok: false, message: "Video not found" });
+            return res.status(404).json({ ok: false, message: "Video not found" });
         }
+
+        await createAuditLog(req, {
+            action: "edit",
+            module: "club",
+            targetId: updatedVideo._id,
+            description: `video details got updated in club (${updatedVideo._id})`,
+            status: "success"
+        });
 
         res.status(200).json({
             ok: true,
@@ -221,7 +246,7 @@ export const updateClubVideoDetails = async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ ok: false,message: "Error updating video details" });
+        res.status(500).json({ ok: false, message: "Error updating video details" });
     }
 };
 
@@ -248,9 +273,17 @@ export const deleteClubVideo = async (req, res) => {
             return res.status(404).json({ message: "video not found", ok: false })
         }
 
-        res.status(200).json({ ok: true,message: "Video deleted successfully" });
+        await createAuditLog(req, {
+            action: "delete",
+            module: "club",
+            targetId: isExist._id,
+            description: `video got deleted (${isExist._id})`,
+            status: "success"
+        });
+
+        res.status(200).json({ ok: true, message: "Video deleted successfully" });
 
     } catch (error) {
-        res.status(500).json({ ok: false,message: "Error deleting video" });
+        res.status(500).json({ ok: false, message: "Error deleting video" });
     }
 };

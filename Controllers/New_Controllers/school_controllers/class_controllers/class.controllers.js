@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import UserModel from "../../../../Models/New_Model/UserModel/userModel.model.js";
 import ClassModel from "../../../../Models/New_Model/SchoolModel/classModel.model.js";
 import { archiveData } from "../../deleteArchieve_controller/deleteArchieve.controller.js";
+import { createAuditLog } from "../../audit_controllers/audit.controllers.js";
 
 // ============================
 // GET CLASSES
@@ -84,6 +85,14 @@ export const createClass = async (req, res) => {
             classTeacherId: finalTeacherId // If hasSections is true, this remains null
         });
 
+        await createAuditLog(req, {
+            action: "create",
+            module: "class",
+            targetId: id,
+            description: `class created (${newClass._id})`,
+            status: "success"
+        });
+
         return res.status(201).json({ ok: true, data: newClass });
     } catch (error) {
         console.error(error);
@@ -130,6 +139,14 @@ export const updateClass = async (req, res) => {
 
         await classDoc.save();
 
+        await createAuditLog(req, {
+            action: "edit",
+            module: "class",
+            targetId: id,
+            description: `class updated (${id})`,
+            status: "success"
+        });
+
         return res.status(200).json({ ok: true, data: classDoc });
     } catch (error) {
         console.error(error);
@@ -166,6 +183,15 @@ export const deleteClass = async (req, res) => {
             deletedBy: req.user._id || null,
             reason: null, // Optional reason from body
         });
+
+        await createAuditLog(req, {
+            action: "delete",
+            module: "class",
+            targetId: id,
+            description: `class deleted (${id})`,
+            status: "success"
+        });
+
 
 
         return res.status(200).json({ ok: true, message: "Class deleted successfully" });

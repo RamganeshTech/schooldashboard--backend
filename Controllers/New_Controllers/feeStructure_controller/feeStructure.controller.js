@@ -2,6 +2,7 @@
 // import ClassModel from "../models/ClassModel.js";
 // import mongoose from "mongoose";
 import FeeStructureModel from "../../../Models/New_Model/FeeStructureModel/FeeStructure.model.js";
+import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 // import ClassModel from './../../../Models/New_Model/SchoolModel/classModel.model.js';
 
 // ==========================================
@@ -28,10 +29,10 @@ export const setFeeStructure = async (req, res) => {
     // const totalAmount = Object.values(feeHead).reduce((acc, val) => acc + (Number(val) || 0), 0);
 
 
-    
+
     // 1. Calculate Total Academic Fee
     // Rule: Total = Admission + 1st Term + 2nd Term
-    const totalAcademicFee = 
+    const totalAcademicFee =
       (Number(feeHead.admissionFee) || 0) +
       (Number(feeHead.firstTermAmt) || 0) +
       (Number(feeHead.secondTermAmt) || 0) +
@@ -42,7 +43,7 @@ export const setFeeStructure = async (req, res) => {
 
     // 4. Upsert (Update if exists, Create if new)
     // Filter: find by schoolId AND classId
-        const updatedFee = await FeeStructureModel.findOneAndUpdate(
+    const updatedFee = await FeeStructureModel.findOneAndUpdate(
       { schoolId, classId },
       {
         $set: {
@@ -58,6 +59,14 @@ export const setFeeStructure = async (req, res) => {
       },
       { new: true, upsert: true, runValidators: true }
     );
+
+    await createAuditLog(req, {
+      action: "create",
+      module: "fee_structure",
+      targetId: updatedFee._id,
+      description: `fee structure of this id got updated (${updatedFee._id})`,
+      status: "success"
+    });
 
     return res.status(200).json({
       ok: true,

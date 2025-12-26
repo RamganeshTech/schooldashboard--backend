@@ -3,6 +3,7 @@ import SectionModel from "../../../../Models/New_Model/SchoolModel/section.model
 import ClassModel from "../../../../Models/New_Model/SchoolModel/classModel.model.js";
 import UserModel from "../../../../Models/New_Model/UserModel/userModel.model.js";
 import { archiveData } from "../../deleteArchieve_controller/deleteArchieve.controller.js";
+import { createAuditLog } from "../../audit_controllers/audit.controllers.js";
 
 // ============================
 // 1. GET SECTIONS
@@ -87,6 +88,14 @@ export const createSection = async (req, res) => {
             classDoc.classTeacherId = null;
             await classDoc.save();
         }
+
+        await createAuditLog(req, {
+            action: "create",
+            module: "section",
+            targetId: newSection._id,
+            description: `section created (${newSection._id})`,
+            status: "success"
+        });
 
 
         return res.status(201).json({ ok: true, data: newSection });
@@ -206,6 +215,14 @@ export const updateSection = async (req, res) => {
             return res.status(404).json({ ok: false, message: "Section not found" });
         }
 
+        await createAuditLog(req, {
+            action: "edit",
+            module: "section",
+            targetId: id,
+            description: `section edited (${id})`,
+            status: "success"
+        });
+
         // (Optional Security): If you updated the teacher, ensure the School IDs match.
         // Since we have the updated document now, we can check it post-update.
         // If mismatch, we revert (rare edge case, but keeps it secure with fewer initial calls).
@@ -242,6 +259,10 @@ export const deleteSection = async (req, res) => {
     try {
         const { id } = req.params;
 
+        if (!id) {
+            return res.status(404).json({ ok: false, message: "Id not found" });
+        }
+
         // TODO: Check if students are enrolled in this section
         // const students = await StudentHistoryModel.findOne({ sectionId: id });
         // if(students) return res.status(400).json({message: "Cannot delete section with students"});
@@ -273,6 +294,14 @@ export const deleteSection = async (req, res) => {
             deletedData: deletedSection.toObject(), // Convert Mongoose doc to plain object
             deletedBy: req.user._id || null,
             reason: null, // Optional reason from body
+        });
+
+        await createAuditLog(req, {
+            action: "delete",
+            module: "section",
+            targetId: id,
+            description: `section deleted (${id})`,
+            status: "success"
         });
 
         return res.status(200).json({ ok: true, message: "Section deleted successfully" });

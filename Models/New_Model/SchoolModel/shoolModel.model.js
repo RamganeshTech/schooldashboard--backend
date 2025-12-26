@@ -21,7 +21,22 @@ const uploadSchema = new Schema({
 });
 
 
-
+const subscriptionSchema = new Schema({
+    planName: {
+        type: String,
+        enum: ["basic", "standard", "premium", "custom", null],
+        default: null
+    },
+    // The source of truth for features
+    modules: {
+        attendance: { type: Boolean, default: false },
+        studentRecord: { type: Boolean, default: false }, // Core feature always true?
+        expense: { type: Boolean, default: false },
+        club: { type: Boolean, default: false },
+        announcement: { type: Boolean, default: false }
+    },
+    validUntil: { type: Date, default: null } // Optional: For expiry
+})
 
 
 const schoolSchema = new Schema(
@@ -37,6 +52,10 @@ const schoolSchema = new Schema(
         logo: {
             type: uploadSchema,
             default: null
+        },
+
+        subscription: {
+            type: subscriptionSchema, default:{},
         },
 
         isActive: { type: Boolean, default: true }

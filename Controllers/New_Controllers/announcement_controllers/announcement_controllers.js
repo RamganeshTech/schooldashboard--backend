@@ -5,6 +5,7 @@ import { AnnouncementModel } from "../../../Models/New_Model/announcement_model/
 import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
 import StudentNewModel from "../../../Models/New_Model/StudentModel/studentNew.model.js";
 import UserModel from "../../../Models/New_Model/UserModel/userModel.model.js";
+import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 
 export const createAnnouncement = async (req, res) => {
     try {
@@ -154,6 +155,14 @@ export const createAnnouncement = async (req, res) => {
         });
 
         await newAnnouncement.save();
+
+        await createAuditLog(req, {
+            action: "create",
+            module: "announcement",
+            targetId: newAnnouncement._id,
+            description: `announcement created (${newAnnouncement._id})`,
+            status: "success"
+        });
 
         // TODO: Trigger Push Notifications here (FCM) based on targetAudience
 
@@ -439,14 +448,14 @@ export const getAnnouncements = async (req, res) => {
         if (userRole === "teacher") {
             // 1. Fetch Teacher's Assignments
             const teacherUser = await UserModel.findById(userId).select("assignments");
-            
+
             if (teacherUser?.assignments?.length > 0) {
                 // Extract classId from every assignment object
                 allowedClassIds = teacherUser.assignments
                     .map(a => a.classId)
                     .filter(id => id); // Remove nulls/undefined
             }
-        } 
+        }
         else if (userRole === "parent") {
             // 1. Fetch Parent's Student IDs
             const parentUser = await UserModel.findById(userId).select("studentId");
@@ -459,15 +468,15 @@ export const getAnnouncements = async (req, res) => {
                 }).select("currentClassId");
 
 
-            console.log("students", students)
+                console.log("students", students)
 
                 // 3. Extract class IDs from the students
                 allowedClassIds = students
                     .map(s => s.currentClassId)
                     .filter(id => id); // Remove nulls/undefined
 
-            console.log("allowedClassIds", allowedClassIds)
-            
+                console.log("allowedClassIds", allowedClassIds)
+
             }
         }
 
@@ -490,18 +499,18 @@ export const getAnnouncements = async (req, res) => {
             query.$or = [
                 // 1. General Teacher Announcements
                 { targetAudience: { $in: ["all", "teacher"] } },
-                
+
                 // 2. Class Specific Announcements (Matches ANY class in their assignments)
                 {
                     targetAudience: "specific_classes",
-                    targetClasses: { $in: allowedClassIds } 
+                    targetClasses: { $in: allowedClassIds }
                 }
             ];
         }
 
         // C. PARENTS
         else if (userRole === "parent") {
-            
+
             // Logic: Must match "parent" AND NOT be "specific_classes" to be considered General
             const generalParentRule = {
                 $and: [
@@ -523,10 +532,10 @@ export const getAnnouncements = async (req, res) => {
                 }
             ];
         }
-        
+
         // D. FALLBACK
         else {
-             return res.status(403).json({ ok: false, message: "Access Denied: Unknown Role" });
+            return res.status(403).json({ ok: false, message: "Access Denied: Unknown Role" });
         }
 
         // =========================================================
@@ -563,7 +572,7 @@ export const getAnnouncements = async (req, res) => {
 export const getAnnouncementById = async (req, res) => {
     try {
         const { id } = req.params;
-        
+
         // 1. Validate ID
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ ok: false, message: "Invalid Announcement ID" });
@@ -769,6 +778,14 @@ export const updateAnnouncementText = async (req, res) => {
 
         await announcement.save();
 
+        await createAuditLog(req, {
+            action: "edit",
+            module: "announcement",
+            targetId: announcement._id,
+            description: `announcement details updated (${announcement._id})`,
+            status: "success"
+        });
+
         res.status(200).json({
             ok: true,
             message: "Announcement details updated",
@@ -828,6 +845,14 @@ export const addAnnouncementAttachments = async (req, res) => {
         announcement.attachments.push(...newAttachments);
         await announcement.save();
 
+        await createAuditLog(req, {
+            action: "edit",
+            module: "announcement",
+            targetId: announcement._id,
+            description: `announcement uploaded some files (${announcement._id})`,
+            status: "success"
+        });
+
         res.status(200).json({
             ok: true,
             message: `${newAttachments.length} file(s) added successfully`,
@@ -880,6 +905,14 @@ export const deleteAnnouncementAttachment = async (req, res) => {
             $pull: { attachments: { _id: fileId } }
         });
 
+         await createAuditLog(req, {
+            action: "edit",
+            module: "announcement",
+            targetId: announcement._id,
+            description: `announcement file got deleted (${announcement._id})`,
+            status: "success"
+        });
+
         res.status(200).json({
             ok: true,
             message: "Attachment deleted successfully"
@@ -917,6 +950,14 @@ export const deleteAnnouncement = async (req, res) => {
             deletedData: updated.toObject(), // Convert Mongoose doc to plain object
             deletedBy: req.user._id || null,
             reason: null, // Optional reason from body
+        });
+
+        await createAuditLog(req, {
+            action: "delete",
+            module: "announcement",
+            targetId: updated._id,
+            description: `announcement deleted (${updated._id})`,
+            status: "success"
         });
 
 

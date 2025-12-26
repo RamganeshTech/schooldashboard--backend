@@ -1,6 +1,7 @@
 import express from "express";
 import { getAttendanceSheet, getClassAttendanceHistory, getStudentAttendanceHistory, markAttendance } from "../../../Controllers/New_Controllers/attendance_controller/attendance.controller.js";
 import { multiRoleAuth } from "../../../Middleware/multiRoleRequest.js";
+import { featureGuard } from "../../../Middleware/featureGuard.js";
 // import { 
 //   getAttendanceSheet, 
 //   markAttendance, 
@@ -19,6 +20,7 @@ const attendanceRoutes = express.Router();
 attendanceRoutes.get(
   "/sheet",
   multiRoleAuth("administrator", "correspondent", "principal", "teacher"),
+  featureGuard("attendance"),
   getAttendanceSheet
 );
 
@@ -27,6 +29,7 @@ attendanceRoutes.get(
 attendanceRoutes.post(
   "/mark",
   multiRoleAuth("correspondent", "teacher"),
+  featureGuard("attendance"),
   markAttendance
 );
 
@@ -34,26 +37,16 @@ attendanceRoutes.post(
 attendanceRoutes.get(
   "/getallclass",
   multiRoleAuth("administrator", "correspondent", "principal", "viceprincipal", "teacher"),
+  featureGuard("attendance"),
   getClassAttendanceHistory
 );
-
-// ==============================================================================
-// 2. REPORT OPERATIONS (Student Level)
-// ==============================================================================
-
-// GET: View Single Student's History (e.g. "Rahul's Attendance for 2025")
-// Used by Parents, Teachers, Admin
-// attendanceRoutes.get(
-//   "/student-report", 
-//   multiRoleAuth("administrator", "correspondent", "principal", "teacher", "parent"), 
-//   getStudentAttendanceReport
-// );
 
 // Example: GET /api/attendance/student/65a123...?month=10&year=2024
 attendanceRoutes.get(
   "/student/:studentId",
   // Add your auth middleware here (ensure user is parent of this student)
   multiRoleAuth("administrator", "correspondent", "principal", "viceprincipal", "teacher", "parent"),
+  featureGuard("attendance"),
   getStudentAttendanceHistory
 );
 

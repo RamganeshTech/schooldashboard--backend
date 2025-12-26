@@ -11,6 +11,7 @@ import { uploadFileToS3New } from "../../../Utils/s4UploadsNew.js";
 import { createLedgerEntry } from "../financeLedger_controller/financeLedger.controller.js";
 import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
 import { FinanceLedgerModel } from "../../../Models/New_Model/financeLedger_model/financeLedger.model.js";
+import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 
 // Helper: Generate Receipt Number (REC-YYYY-0001)
 const generateReceiptNo = async (schoolId, session) => {
@@ -488,6 +489,14 @@ export const collectFeeAndManageRecord = async (req, res) => {
             // ---------------------------------------------------------
         }
 
+         await createAuditLog(req, {
+            action: "create",
+            module: "student_record",
+            targetId: studentRecord._id,
+            description: `student record created (${studentRecord._id})`,
+            status: "success"
+        });
+
         await session.commitTransaction();
         session.endSession();
 
@@ -639,6 +648,16 @@ export const revertFeeTransaction = async (req, res) => {
         // 8. Save Both
         await studentRecord.save({ session });
         await transaction.save({ session });
+
+
+
+        await createAuditLog(req, {
+            action: "edit",
+            module: "fee_receipt",
+            targetId: receiptId,
+            description: `fee receipt ${status} (${receiptId})`,
+            status: "success"
+        });
 
         await session.commitTransaction();
         session.endSession();
@@ -920,6 +939,14 @@ export const applyConcession = async (req, res) => {
             );
         }
 
+          await createAuditLog(req, {
+            action: "edit",
+            module: "student_record",
+            targetId: studentRecord._id,
+            description: `concession applied for this student id (${studentRecord._id})`,
+            status: "success"
+        });
+
         await session.commitTransaction();
         session.endSession();
 
@@ -1110,7 +1137,7 @@ export const getAllStudentRecords = async (req, res) => {
             // 3. Status Filters
             newOld,         // "New" or "Old"
             isActive,       // true/false
-            
+
             // 4. Financial/Feature Filters
             isBusApplicable, // true/false
             isFullyPaid,     // true/false
@@ -1133,7 +1160,7 @@ export const getAllStudentRecords = async (req, res) => {
         if (search) {
             // Create a case-insensitive Regex
             const searchRegex = new RegExp(search, "i");
-            
+
             query.$or = [
                 { studentName: searchRegex }, // Matches name
                 { rollNumber: searchRegex }   // Matches roll number (e.g. "101")
@@ -1155,7 +1182,7 @@ export const getAllStudentRecords = async (req, res) => {
         if (newOld) {
             query.newOld = newOld; // "New" or "Old"
         }
-        
+
         // Handle Boolean strings coming from Query Params
         if (isActive !== undefined) {
             query.isActive = isActive === 'true';
@@ -1192,7 +1219,7 @@ export const getAllStudentRecords = async (req, res) => {
         // --- 6. EXECUTION ---
         const [records, total] = await Promise.all([
             StudentRecordModel.find(query)
-                .sort({ 
+                .sort({
                     classId: 1,      // Group by Class
                     sectionId: 1,    // Then by Section
                     studentName: 1   // Then Alphabetical
@@ -1200,8 +1227,8 @@ export const getAllStudentRecords = async (req, res) => {
                 .skip(skip)
                 .limit(limitNum)
                 // Populate studentId to get the Image/Avatar which is in the main profile
-                .populate("studentId", "studentImage studentName srId"), 
-            
+                .populate("studentId", "studentImage studentName srId"),
+
             StudentRecordModel.countDocuments(query)
         ]);
 
@@ -1328,6 +1355,14 @@ export const deleteStudentRecord = async (req, res) => {
             reason: null, // Optional reason from body
         });
 
+        await createAuditLog(req, {
+            action: "delete",
+            module: "student_record",
+            targetId: studentRecord._id,
+            description: `student record got deleted (${studentRecord._id})`,
+            status: "success"
+        });
+
         // await session.commitTransaction();
         // session.endSession();
 
@@ -1365,6 +1400,14 @@ export const toggleStudentRecordStatus = async (req, res) => {
         if (!updatedRecord) {
             return res.status(404).json({ ok: false, message: "Student Record not found" });
         }
+
+         await createAuditLog(req, {
+            action: "edit",
+            module: "student_record",
+            targetId: updatedRecord._id,
+            description: `student record active status got updated (${updatedRecord._id})`,
+            status: "success"
+        });
 
         return res.status(200).json({
             ok: true,

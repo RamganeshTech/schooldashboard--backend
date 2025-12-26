@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import UserModel from "../../../Models/New_Model/UserModel/userModel.model.js";
 import ClassModel from "../../../Models/New_Model/SchoolModel/classModel.model.js";
 import SectionModel from "../../../Models/New_Model/SchoolModel/section.model.js";
+import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 
 // ==========================================
 // MANAGE TEACHER ASSIGNMENTS
@@ -132,6 +133,14 @@ export const manageTeacherAssignments = async (req, res) => {
 
     teacher.assignments = currentAssignments;
     await teacher.save();
+
+     await createAuditLog(req, {
+            action: "edit",
+            module: "teacher",
+            targetId: teacherId,
+            description: `teacher class assign got updated (${teacherId})`,
+            status: "success"
+        });
 
     return res.status(200).json({
       ok: true,

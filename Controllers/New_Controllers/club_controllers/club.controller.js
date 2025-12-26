@@ -2,6 +2,7 @@
 
 import { ClubMainModel, ClubVideoModel } from "../../../Models/New_Model/club_model/club.model.js";
 import { uploadFileToS3New } from "../../../Utils/s4UploadsNew.js";
+import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
 
 // Helper function to format the file object for your UploadSchema
@@ -32,7 +33,7 @@ export const createClub = async (req, res) => {
         // Check if club name already exists for this school
         const existingClub = await ClubMainModel.findOne({ name, schoolId });
         if (existingClub) {
-            return res.status(400).json({ ok: false,message: "A club with this name already exists." });
+            return res.status(400).json({ ok: false, message: "A club with this name already exists." });
         }
 
         // Handle Thumbnail Upload (if file provided)
@@ -52,6 +53,15 @@ export const createClub = async (req, res) => {
 
         await newClub.save();
 
+
+         await createAuditLog(req, {
+            action: "create",
+            module: "club",
+            targetId: newClub._id,
+            description: `club created (${newClub._id})`,
+            status: "success"
+        });
+
         res.status(201).json({
             ok: true,
             message: "Club created successfully",
@@ -60,7 +70,7 @@ export const createClub = async (req, res) => {
 
     } catch (error) {
         console.error("Create Club Error:", error);
-        res.status(500).json({ok: false, message: "Server error while creating club" });
+        res.status(500).json({ ok: false, message: "Server error while creating club" });
     }
 };
 
@@ -69,7 +79,7 @@ export const createClub = async (req, res) => {
 // ==========================================
 export const getAllClubs = async (req, res) => {
     try {
-        const { schoolId } = req.query; 
+        const { schoolId } = req.query;
 
         // 1. Pagination Setup
         const page = parseInt(req.query.page) || 1;
@@ -109,7 +119,7 @@ export const getAllClubs = async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching clubs:", error);
-        res.status(500).json({ok: false, message: "Error fetching clubs" });
+        res.status(500).json({ ok: false, message: "Error fetching clubs" });
     }
 };
 
@@ -122,13 +132,13 @@ export const getClubById = async (req, res) => {
         const club = await ClubMainModel.findById(id);
 
         if (!club) {
-            return res.status(404).json({ ok: false,message: "Club not found" });
+            return res.status(404).json({ ok: false, message: "Club not found" });
         }
 
-        res.status(200).json({ ok: true,data: club });
+        res.status(200).json({ ok: true, data: club });
 
     } catch (error) {
-        res.status(500).json({ ok: false,message: "Error fetching club details" });
+        res.status(500).json({ ok: false, message: "Error fetching club details" });
     }
 };
 
@@ -155,8 +165,16 @@ export const updateClubText = async (req, res) => {
         );
 
         if (!updatedClub) {
-            return res.status(404).json({ ok: false,message: "Club not found" });
+            return res.status(404).json({ ok: false, message: "Club not found" });
         }
+
+        await createAuditLog(req, {
+            action: "edit",
+            module: "club",
+            targetId: updatedClub._id,
+            description: `club details updated (${updatedClub._id})`,
+            status: "success"
+        });
 
         res.status(200).json({
             ok: true,
@@ -195,6 +213,15 @@ export const updateClubThumbnail = async (req, res) => {
             return res.status(404).json({ ok: false, message: "Club not found" });
         }
 
+        
+        await createAuditLog(req, {
+            action: "edit",
+            module: "club",
+            targetId: updatedClub._id,
+            description: `club thumbnail updated (${updatedClub._id})`,
+            status: "success"
+        });
+
         // TODO: Optional - Delete the OLD image from S3/Storage here using the old key to save space.
 
         res.status(200).json({
@@ -205,7 +232,7 @@ export const updateClubThumbnail = async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ok: false, message: "Error updating thumbnail" });
+        res.status(500).json({ ok: false, message: "Error updating thumbnail" });
     }
 };
 
@@ -239,12 +266,19 @@ export const deleteClub = async (req, res) => {
             reason: null, // Optional reason from body
         });
 
+        await createAuditLog(req, {
+            action: "delete",
+            module: "club",
+            targetId: deletedOne._id,
+            description: `club got deleted (${deletedOne._id})`,
+            status: "success"
+        });
 
 
 
-        res.status(200).json({ ok: true,message: "Club and associated videos deleted successfully" });
+        res.status(200).json({ ok: true, message: "Club and associated videos deleted successfully" });
 
     } catch (error) {
-        res.status(500).json({ ok: false,message: "Error deleting club" });
+        res.status(500).json({ ok: false, message: "Error deleting club" });
     }
 };

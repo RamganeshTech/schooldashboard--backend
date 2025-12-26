@@ -4,6 +4,7 @@ import { uploadFileToS3New } from "../../../Utils/s4UploadsNew.js";
 import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
 import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model.js";
 import { createLedgerEntry } from "../financeLedger_controller/financeLedger.controller.js";
+import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 
 const processFiles = async (filesArray) => {
     if (!filesArray || filesArray.length === 0) return [];
@@ -141,6 +142,13 @@ export const addExpense = async (req, res) => {
 
         // ---------------------------------------------------------
 
+         await createAuditLog(req, {
+            action: "create",
+            module: "expense",
+            targetId: newExpense?._id,
+            description: `expense created (${newExpense._id})`,
+            status: "success"
+        });
 
         res.status(201).json({
             ok: true,
@@ -278,18 +286,22 @@ export const getAllExpenses = async (req, res) => {
 export const deleteExpense = async (req, res) => {
     try {
         const { id } = req.params;
-        const userRole = req.user.role;
 
-        // 1. Role Restriction
-        if (userRole !== "correspondent") {
-            return res.status(403).json({
-                ok: false,
-                message: "Access Denied. Only Correspondent can delete expenses."
-            });
-        }
 
         // 2. Find and Delete
         const deletedExpense = await ExpenseModel.findByIdAndDelete(id);
+
+
+
+
+        // console.log("deletedOne", deletedOne)
+
+        if (!deletedExpense) {
+            return res.status(404).json({
+                ok: false,
+                message: "Expense not found"
+            });
+        }
 
         // 2. CALL THE ARCHIVE UTILITY
         const deletedOne = await archiveData({
@@ -301,15 +313,14 @@ export const deleteExpense = async (req, res) => {
             reason: null, // Optional reason from body
         });
 
+        await createAuditLog(req, {
+            action: "delete",
+            module: "expense",
+            targetId: id,
+            description: `expense got deleted (${id})`,
+            status: "success"
+        });
 
-        console.log("deletedOne", deletedOne)
-
-        if (!deletedExpense) {
-            return res.status(404).json({
-                ok: false,
-                message: "Expense not found"
-            });
-        }
 
         // TODO: If you have a DeletedExpenseArchiveModel, you should create that entry here 
         // before deleting, or use Soft Delete (isDeleted: true) instead of findByIdAndDelete.
@@ -443,6 +454,14 @@ export const updateExpense = async (req, res) => {
         });
         // ---------------------------------------------------------
 
+        await createAuditLog(req, {
+            action: "edit",
+            module: "expense",
+            targetId: expense._id,
+            description: `updated the expense data for this id (${expense._id})`,
+            status: "success"
+        });
+
 
         res.status(200).json({
             ok: true,
@@ -497,6 +516,14 @@ export const updateExpenseStatus = async (req, res) => {
             });
         }
 
+
+        await createAuditLog(req, {
+            action: "edit",
+            module: "expense",
+            targetId: updatedExpense._id,
+            description: `updated the expense status for this id (${updatedExpense._id})`,
+            status: "success"
+        });
         res.status(200).json({
             ok: true,
             message: `Expense marked as ${status.toUpperCase()} successfully.`,
@@ -577,6 +604,14 @@ export const deleteProof = async (req, res) => {
         // make sure you don't break your own rules. Since this is 'delete', we assume it's allowed.
 
         await expense.save();
+
+        await createAuditLog(req, {
+            action: "edit",
+            module: "expense",
+            targetId: expenseId,
+            description: `proof deleted for this expense id (${expenseId})`,
+            status: "success"
+        });
 
         res.status(200).json({
             ok: true,

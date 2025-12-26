@@ -6,6 +6,7 @@ import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model.
 import { isValidEmail, isValidPhone } from "../../../Utils/basicValidation.js";
 // import { uploadImageToS3 } from "../../../Utils/s3upload.js";
 import { uploadFileToS3New } from "../../../Utils/s4UploadsNew.js";
+import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
 
 // ==========================================
@@ -129,6 +130,14 @@ export const createSchool = async (req, res) => {
     });
 
     await newSchool.save();
+
+    await createAuditLog(req, {
+      action: "create",
+      module: "school",
+      targetId: newSchool?._id,
+      description: `school created (${newSchool._id})`,
+      status: "success"
+    });
 
     return res.status(201).json({
       message: "School created successfully",
@@ -270,6 +279,14 @@ export const updateSchool = async (req, res) => {
       runValidators: true,
     });
 
+    await createAuditLog(req, {
+      action: "edit",
+      module: "school",
+      targetId: updatedSchool?._id,
+      description: `school updated (${updatedSchool._id})`,
+      status: "success"
+    });
+
     return res.status(200).json({
       ok: true,
       message: "School updated successfully",
@@ -327,6 +344,14 @@ export const updateSchoolLogo = async (req, res) => {
       new: true,
     });
 
+    await createAuditLog(req, {
+      action: "edit",
+      module: "school",
+      targetId: updatedSchool?._id,
+      description: `school logo updated (${updatedSchool._id})`,
+      status: "success"
+    });
+
     return res.status(200).json({
       message: "School logo updated successfully",
       data: updatedSchool,
@@ -363,6 +388,14 @@ export const deleteSchool = async (req, res) => {
       deletedData: school.toObject(), // Convert Mongoose doc to plain object
       deletedBy: req.user._id || null,
       reason: null, // Optional reason from body
+    });
+
+    await createAuditLog(req, {
+      action: "delete",
+      module: "school",
+      targetId: school?._id,
+      description: `school deleted (soft delete) (${school._id})`,
+      status: "success"
     });
 
     // Note: In an LMS, usually we prefer "Soft Delete" (setting isActive: false)

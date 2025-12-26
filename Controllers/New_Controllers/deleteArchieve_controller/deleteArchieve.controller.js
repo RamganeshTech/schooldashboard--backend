@@ -1,13 +1,14 @@
 import mongoose from "mongoose";
 import { DeletedArchiveModel } from "../../../Models/New_Model/deleteArchive_model/deleteArchieve.model.js";
+import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 
-export const archiveData = async ({ 
-    schoolId, 
-    category, 
-    originalId, 
-    deletedData, 
-    deletedBy, 
-    reason 
+export const archiveData = async ({
+    schoolId,
+    category,
+    originalId,
+    deletedData,
+    deletedBy,
+    reason
 }) => {
     try {
         const newArchive = new DeletedArchiveModel({
@@ -19,7 +20,7 @@ export const archiveData = async ({
             reason: reason || null
         });
 
-        
+
 
         await newArchive.save();
 
@@ -31,7 +32,7 @@ export const archiveData = async ({
         // We log the error but usually don't throw it, 
         // to prevent the main delete flow from failing just because archiving failed.
         console.error("[Archive Error] Failed to archive data:", error);
-        return null; 
+        return null;
     }
 };
 
@@ -55,7 +56,7 @@ export const getAllDeletedItems = async (req, res) => {
         // Optional: Filter by specific category (e.g., only show deleted 'Expense')
         if (category) {
             // query.category = category
-             query.category = { $regex: new RegExp(category, "i") };
+            query.category = { $regex: new RegExp(category, "i") };
         }
 
         const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -132,6 +133,14 @@ export const deletePermanently = async (req, res) => {
         if (!deletedItem) {
             return res.status(404).json({ ok: false, message: "Archived item not found" });
         }
+
+        await createAuditLog(req, {
+            action: "delete",
+            module: "delete_archive",
+            targetId: deletedItem._id,
+            description: `item deleted from the delete archive (${deletedItem._id})`,
+            status: "success"
+        });
 
         res.status(200).json({
             ok: true,
