@@ -118,7 +118,7 @@ export const collectFeeAndManageRecord = async (req, res) => {
                 studentName: studentName || null,
                 className: cDoc.name, sectionName: sName,
                 isActive: true,
-                newOld: newOld || "New",
+                newOld: newOld?.toLowerCase() || "new",
                 feeStructure: initialStructure,
                 feePaid: { admissionFee: 0, firstTermAmt: 0, secondTermAmt: 0, busFirstTermAmt: 0, busSecondTermAmt: 0 },
                 concession: { isApplied: false },

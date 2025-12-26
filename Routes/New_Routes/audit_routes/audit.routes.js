@@ -12,7 +12,7 @@ const auditRoutes = express.Router();
 // Used by Teachers daily
 auditRoutes.get(
   "/getall", 
-  multiRoleAuth("correspondent", "principal"), 
+  multiRoleAuth("administrator","correspondent", "principal", "viceprincipal"), 
   getAllAuditLogs
 );
 
@@ -20,7 +20,7 @@ auditRoutes.get(
 
 auditRoutes.get(
   "/get/:id",
-  multiRoleAuth("administrator", "correspondent", "principal", "teacher"), 
+  multiRoleAuth("administrator", "correspondent", "principal", "viceprincipal"), 
   getAuditLogById
 );
 

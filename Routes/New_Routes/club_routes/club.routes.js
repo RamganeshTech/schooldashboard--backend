@@ -64,6 +64,6 @@ clubRoutes.put('/video/updatedetails/:id',  multiRoleAuth("correspondent", "admi
 clubRoutes.put('/video/updatefile/:id',  multiRoleAuth("correspondent", "administrator"), upload.single('video'), updateClubVideoFile);
 
 // Delete Video
-clubRoutes.delete('/video/delete/:id', deleteClubVideo);
+clubRoutes.delete('/video/delete/:id', multiRoleAuth("correspondent", "administrator"), deleteClubVideo);
 
 export default clubRoutes;

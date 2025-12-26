@@ -563,9 +563,7 @@ export const getAnnouncements = async (req, res) => {
 export const getAnnouncementById = async (req, res) => {
     try {
         const { id } = req.params;
-        // const { classId } = req.query; // Required for Parent/Student validation
-        // const userRole = req?.user?.role.toLowerCase();
-
+        
         // 1. Validate ID
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ ok: false, message: "Invalid Announcement ID" });

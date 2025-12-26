@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import { FinanceLedgerModel } from "../../../Models/New_Model/financeLedger_model/financeLedger.model.js";
 import StudentRecordModel from "../../../Models/New_Model/StudentModel/StudentRecordModel/studentRecord.model.js";
-import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 
 export const createLedgerEntry = async ({
     schoolId,
@@ -115,13 +114,13 @@ export const getAllTransactions = async (req, res) => {
             FinanceLedgerModel.countDocuments(query)
         ]);
 
-        // await createAuditLog(req, {
-        //     action: "get",
-        //     module: "finance_ledger",
-        //     targetId: null,
-        //     description: `got the request details`,
-        //     status: "success"
-        // });
+        await createAuditLog(req, {
+            action: "get",
+            module: "finance_ledger",
+            targetId: null,
+            description: `got the request details`,
+            status: "success"
+        });
 
         res.status(200).json({
             ok: true,

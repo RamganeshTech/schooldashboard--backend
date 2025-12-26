@@ -5,9 +5,9 @@ import { deletePermanently, getAllDeletedItems, getDeletedItemById } from "../..
 
 const deleteArchiveRoutes = express.Router();
 
-deleteArchiveRoutes.get("/getall", multiRoleAuth("correspondent", "accountant", "principal"), getAllDeletedItems);
+deleteArchiveRoutes.get("/getall", multiRoleAuth("correspondent", "accountant", "principal", "viceprincipal"), getAllDeletedItems);
 
-deleteArchiveRoutes.get("/get/:id", multiRoleAuth("correspondent", "accountant", "principal"), getDeletedItemById);
+deleteArchiveRoutes.get("/get/:id", multiRoleAuth("correspondent", "accountant", "principal", "viceprincipal"), getDeletedItemById);
 
 deleteArchiveRoutes.delete("/delete/:id", multiRoleAuth("correspondent"), deletePermanently);
 

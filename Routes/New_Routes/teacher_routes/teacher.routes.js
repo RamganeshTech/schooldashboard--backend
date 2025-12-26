@@ -1,6 +1,6 @@
 import express from "express";
 import { multiRoleAuth } from "../../../Middleware/multiRoleRequest.js";
-import { manageTeacherAssignments } from "../../../Controllers/New_Controllers/teachers_controllers/teachers.controllers.js";
+import { getAllClassesWithSections, manageTeacherAssignments } from "../../../Controllers/New_Controllers/teachers_controllers/teachers.controllers.js";
 
 // import { manageTeacherAssignments } from "../controllers/assignmentController.js"; // Adjust path if needed
 // import { multiRoleAuth } from "../middlewares/authMiddleware.js";
@@ -22,5 +22,14 @@ teacherRoutes.post(
     multiRoleAuth("correspondent", "administrator",),
     manageTeacherAssignments
 );
+
+teacherRoutes.get(
+    "/getall/class/section",
+    //   multiRoleAuth("PlatformAdmin", "SuperAdmin", "Correspondent", "Principal"), 
+    multiRoleAuth("correspondent", "administrator", "accountant", "teacher", "principal", "viceprincipal"),
+    getAllClassesWithSections
+);
+
+
 
 export default teacherRoutes;

@@ -145,12 +145,6 @@ export const manageTeacherAssignments = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
 //  Endpoint: POST /api/users/assignments/manage
 // Behavior: This API works like a Toggle Switch. It does not "set" data; it flips the state (On -> Off, Off -> On).
 
@@ -250,7 +244,57 @@ export const manageTeacherAssignments = async (req, res) => {
 //   ]
 // }
 
+export const getAllClassesWithSections = async (req, res) => {
+  try {
+    const { schoolId } = req.query;
 
+    if (!schoolId) {
+      return res.status(400).json({ ok: false, message: "schoolId is required" });
+    }
 
+    // 1. Fetch all Classes for the school
+    // We use .lean() to get plain JS objects (faster/easier to modify)
+    const classes = await ClassModel.find({ schoolId })
+      .select("name hasSections _id") // specific fields you need
+      .sort({ name: 1 }) // Sort classes alphabetically or by custom order
+      .lean();
 
+    if (!classes.length) {
+      return res.status(200).json({ ok: true, data: [] });
+    }
 
+    // 2. Fetch all Sections associated with these classes
+    // We filter by the IDs of the classes we just found
+    const classIds = classes.map((c) => c._id);
+    
+    const sections = await SectionModel.find({ classId: { $in: classIds } })
+      .select("name classId _id")
+      .sort({ name: 1 }) // Sort sections (A, B, C...)
+      .lean();
+
+    // 3. Merge Sections into their respective Classes
+    const data = classes.map((cls) => {
+      // Find sections that belong to this class
+      const classSections = sections.filter(
+        (sec) => sec.classId.toString() === cls._id.toString()
+      );
+
+      return {
+        _id: cls._id,
+        name: cls.name,
+        hasSections: cls.hasSections,
+        // If class has sections, attach them. If not, empty array.
+        sections: classSections 
+      };
+    });
+
+    return res.status(200).json({
+      ok: true,
+      data: data
+    });
+
+  } catch (error) {
+    console.error("Get All Classes Error:", error);
+    return res.status(500).json({ ok: false, message: "Internal server error" });
+  }
+};
