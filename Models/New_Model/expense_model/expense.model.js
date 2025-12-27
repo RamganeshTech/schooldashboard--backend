@@ -98,5 +98,6 @@ expenseSchema.pre("save", async function (next) {
     }
 });
 
+expenseSchema.index({ schoolId: 1, academicYear: 1 });
 
 export const ExpenseModel = mongoose.model("ExpenseModel", expenseSchema);

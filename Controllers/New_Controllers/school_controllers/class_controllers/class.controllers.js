@@ -29,7 +29,7 @@ export const getClasses = async (req, res) => {
 // ============================
 export const createClass = async (req, res) => {
     try {
-        const { name, order = 0, hasSections = false, classTeacherId = null } = req.body;
+        const { name, order = 0, hasSections = false } = req.body;
         const { schoolId } = req.params
 
         // Auto-detect schoolId from logged-in user (Best Practice)
@@ -52,28 +52,7 @@ export const createClass = async (req, res) => {
         }
 
         // 3. Teacher Validation (If assigning one)
-        let finalTeacherId = null;
-
-        // Logic: Only assign teacher if Class has NO sections
-        if (!hasSections && classTeacherId) {
-            const teacher = await UserModel.findById(classTeacherId);
-
-            if (!teacher) {
-                return res.status(404).json({ ok: false, message: "Selected teacher not found" });
-            }
-
-            // Ensure the user is actually a Teacher
-            if (teacher.role !== "teacher") { // Adjust casing based on your DB
-                return res.status(400).json({ ok: false, message: "Selected user is not a Teacher" });
-            }
-
-            // Ensure teacher belongs to THIS school
-            if (teacher.schoolId.toString() !== schoolId.toString()) {
-                return res.status(403).json({ ok: false, message: "Teacher belongs to a different school" });
-            }
-
-            finalTeacherId = classTeacherId;
-        }
+       
 
 
 
@@ -82,7 +61,7 @@ export const createClass = async (req, res) => {
             name,
             order,
             hasSections, // If true, teacher is ignored
-            classTeacherId: finalTeacherId // If hasSections is true, this remains null
+            classTeacherId: [] // If hasSections is true, this remains null
         });
 
         await createAuditLog(req, {
@@ -106,7 +85,7 @@ export const createClass = async (req, res) => {
 export const updateClass = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, order, hasSections, classTeacherId } = req.body;
+        const { name, order, hasSections } = req.body;
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ ok: false, message: "Invalid class ID" });
@@ -134,7 +113,7 @@ export const updateClass = async (req, res) => {
         // if (name) classDoc.name = name;
         if (order !== undefined) classDoc.order = order;
         if (hasSections !== undefined) classDoc.hasSections = hasSections;
-        if (classTeacherId !== undefined) classDoc.classTeacherId = classTeacherId;
+        // if (classTeacherId !== undefined) classDoc.classTeacherId = classTeacherId;
 
 
         await classDoc.save();

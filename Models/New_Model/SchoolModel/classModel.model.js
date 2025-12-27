@@ -14,13 +14,14 @@ const classSchema = new Schema(
     hasSections: { type: Boolean, default: true },
 
     // ASSIGN TEACHER: Only used if hasSections = false
-    classTeacherId: { type: Schema.Types.ObjectId, ref: "UserModel", default: null },
+    classTeacherId: { type: [Schema.Types.ObjectId], ref: "UserModel", default: [] },
   },
   { timestamps: true }
 );
 
 // Prevent duplicate class names within the same school
 // classSchema.index({ schoolId: 1, name: 1 }, { unique: true });
+classSchema.index({ schoolId: 1});
 
 const ClassModel = model("ClassModel", classSchema);
 export default ClassModel;

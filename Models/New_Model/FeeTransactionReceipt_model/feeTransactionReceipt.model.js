@@ -47,6 +47,13 @@ const FeeTransactionSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
+
+FeeTransactionSchema.index({
+    schoolId: 1,
+    studentId: 1,
+    recordId: 1
+});
+
 const FeeTransactionModel = mongoose.model('FeeTransactionModel', FeeTransactionSchema);
 
 export default FeeTransactionModel

@@ -148,5 +148,10 @@ StudentNewSchema.pre("save", async function (next) {
     }
 });
 
+StudentNewSchema.index({
+    schoolId: 1,
+    studentName: 1,
+});
+
 const StudentNewModel = mongoose.model('StudentNewModel', StudentNewSchema);
 export default StudentNewModel;

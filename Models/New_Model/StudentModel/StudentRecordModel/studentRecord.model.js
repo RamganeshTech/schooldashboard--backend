@@ -89,5 +89,11 @@ const StudentRecordSchema = mongoose.Schema({
 // CONSTRAINT: One Record per Student per Academic Year
 // StudentRecordSchema.index({ studentId: 1, academicYear: 1 }, { unique: true });
 
+
+StudentRecordSchema.index({
+    schoolId: 1,
+    studentId: 1,
+});
+
 const StudentRecordModel = mongoose.model('StudentRecord', StudentRecordSchema);
 export default StudentRecordModel;

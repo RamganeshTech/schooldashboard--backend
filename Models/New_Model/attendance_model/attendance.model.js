@@ -45,6 +45,7 @@ const AttendanceSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
+AttendanceSchema.index({schoolId:1, academicYear:1});
 
 const AttendanceModel = mongoose.model('AttendanceModel', AttendanceSchema);
 export default AttendanceModel;

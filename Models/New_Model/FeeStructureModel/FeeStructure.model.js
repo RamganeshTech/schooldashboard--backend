@@ -25,6 +25,7 @@ const FeeStructureSchema = mongoose.Schema({
 // ClassFeeMasterSchema.index({ schoolId: 1, classId: 1, academicYear: 1 }, { unique: true });
 
 
+FeeStructureSchema.index({schoolId:1, classId:1});
 
 const FeeStructureModel = mongoose.model('FeeStructureModel', FeeStructureSchema);
 

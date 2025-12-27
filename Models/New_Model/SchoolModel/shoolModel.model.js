@@ -112,5 +112,9 @@ schoolSchema.pre("save", async function (next) {
     }
 });
 
+
+schoolSchema.index({ schoolCode: 1});
+
+
 const SchoolModel = model("SchoolModel", schoolSchema);
 export default SchoolModel;

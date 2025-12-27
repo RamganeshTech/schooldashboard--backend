@@ -1,14 +1,16 @@
 import express from "express";
-import { applyConcession, collectFeeAndManageRecord, deleteStudentRecord,
-   getAllStudentRecords,
-   getStudentRecordById, revertFeeTransaction,
-   toggleStudentRecordStatus, updateConcessionDetails,
-    uploadConcessionProof 
-  } from "../../../../Controllers/New_Controllers/studentRecord_controller/studentRecord.controller.js";
+import {
+  applyConcession, collectFeeAndManageRecord, deleteStudentRecord,
+  getAllStudentRecords,
+  getStudentRecordById, revertFeeTransaction,
+  toggleStudentRecordStatus, updateConcessionDetails,
+  uploadConcessionProof
+} from "../../../../Controllers/New_Controllers/studentRecord_controller/studentRecord.controller.js";
 // import { upload } from "../../../../Utils/s3upload.js";
 import { multiRoleAuth } from "../../../../Middleware/multiRoleRequest.js";
 import { upload } from "../../../../Utils/s4UploadsNew.js";
 import { assignStudentToClass, removeStudentFromClass } from "../../../../Controllers/New_Controllers/studentRecord_controller/assignStudentClass.controller.js";
+import { featureGuard } from "../../../../Middleware/featureGuard.js";
 
 const studentRecordRoutes = express.Router();
 
@@ -25,8 +27,9 @@ const studentRecordRoutes = express.Router();
 studentRecordRoutes.post(
   "/applyconcession",
   multiRoleAuth("correspondent", "accountant", "principal"),
+  featureGuard("studentRecord"),
   // "files" is the key name for form-data. 10 is max count.
-  upload.single("file"), 
+  upload.single("file"),
   applyConcession
 );
 
@@ -35,15 +38,18 @@ studentRecordRoutes.post(
 studentRecordRoutes.put(
   "/updatevalue",
   multiRoleAuth("correspondent", "accountant", "principal"),
+  featureGuard("studentRecord"),
   // "files" is the key name for form-data. 10 is max count.
- updateConcessionDetails
+  updateConcessionDetails
 );
 
 //  one fule only allowed, it will take the first file
 studentRecordRoutes.put(
   "/update/proof",
   multiRoleAuth("correspondent", "accountant", "principal"),
-  upload.array("file"), 
+  featureGuard("studentRecord"),
+
+  upload.array("file"),
   uploadConcessionProof
 );
 
@@ -52,6 +58,8 @@ studentRecordRoutes.put(
 studentRecordRoutes.post(
   "/collectfee",
   multiRoleAuth("correspondent", "accountant"),
+  featureGuard("studentRecord"),
+
   collectFeeAndManageRecord
 );
 
@@ -59,6 +67,8 @@ studentRecordRoutes.post(
 studentRecordRoutes.get(
   "/getrecord/:schoolId/:studentId",
   multiRoleAuth("administrator", "correspondent", "principal", "viceprincipal", "accountant"),
+  featureGuard("studentRecord"),
+
   getStudentRecordById
 );
 
@@ -66,6 +76,7 @@ studentRecordRoutes.get(
 studentRecordRoutes.delete(
   "/deleterecord/:id",
   multiRoleAuth("correspondent"), // Only Top-Level Access
+  featureGuard("studentRecord"),
   deleteStudentRecord
 );
 
@@ -73,6 +84,8 @@ studentRecordRoutes.delete(
 studentRecordRoutes.patch(
   "/togglestatus/:id",
   multiRoleAuth("administrator", "correspondent", "accountant"),
+  featureGuard("studentRecord"),
+
   toggleStudentRecordStatus
 );
 
@@ -81,12 +94,16 @@ studentRecordRoutes.patch(
 studentRecordRoutes.put(
   "/revertreceipt",
   multiRoleAuth("correspondent", "accountant", "principal"),
+  featureGuard("studentRecord"),
+
   revertFeeTransaction
 );
 
 studentRecordRoutes.get(
   "/getall",
   multiRoleAuth("correspondent", "accountant", "principal", "administrator", "viceprincipal"),
+  featureGuard("studentRecord"),
+
   getAllStudentRecords
 );
 

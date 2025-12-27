@@ -38,7 +38,7 @@ export const getSections = async (req, res) => {
 // ============================
 export const createSection = async (req, res) => {
     try {
-        const { schoolId, classId, name, classTeacherId = null, roomNumber, capacity } = req.body;
+        const { schoolId, classId, name, roomNumber, capacity } = req.body;
 
         // 1. Basic Validation
         if (!schoolId || !classId || !name) {
@@ -73,7 +73,7 @@ export const createSection = async (req, res) => {
             schoolId,
             classId,
             name,
-            classTeacherId: classTeacherId || null,
+            classTeacherId: [],
             roomNumber,
             capacity
         });
@@ -85,7 +85,7 @@ export const createSection = async (req, res) => {
         // CRITICAL CHECK: Does this class actually allow sections?
         if (classDoc && !classDoc?.hasSections) {
             classDoc.hasSections = true;
-            classDoc.classTeacherId = null;
+            classDoc.classTeacherId = [];
             await classDoc.save();
         }
 
@@ -167,7 +167,7 @@ export const createSection = async (req, res) => {
 export const updateSection = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, classTeacherId, roomNumber, capacity } = req.body;
+        const { name, roomNumber, capacity } = req.body;
 
         // 1. Prepare Update Object (Clean & Dynamic)
         const updates = {};
@@ -195,11 +195,6 @@ export const updateSection = async (req, res) => {
         //     }
         // }
 
-        if (classTeacherId) {
-            updates.classTeacherId = classTeacherId;
-        } else {
-            updates.classTeacherId = null
-        }
 
         // 3. THE MAIN OPTIMIZATION: Find & Update in ONE Shot
         // We try to update. 

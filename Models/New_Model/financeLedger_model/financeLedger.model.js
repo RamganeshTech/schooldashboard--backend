@@ -118,4 +118,11 @@ const financeLedgerSchema = new mongoose.Schema(
 // // 3. Get Student Ledger (History of one student)
 // financeLedgerSchema.index({ schoolId: 1, studentId: 1 });
 
+
+financeLedgerSchema.index({
+    schoolId: 1,
+    academicYear: 1,
+    
+});
+
 export const FinanceLedgerModel = mongoose.model("FinanceLedgerModel", financeLedgerSchema);

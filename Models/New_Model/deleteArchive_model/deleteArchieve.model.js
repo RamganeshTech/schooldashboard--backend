@@ -62,5 +62,6 @@ const deletedArchiveSchema = new mongoose.Schema(
 // deletedArchiveSchema.index({ schoolId: 1, category: 1 });
 // // 2. To sort by deletion date
 // deletedArchiveSchema.index({ deletedAt: -1 });
+deletedArchiveSchema.index({schoolId:1});
 
 export const DeletedArchiveModel = mongoose.model("DeletedArchiveModel", deletedArchiveSchema);

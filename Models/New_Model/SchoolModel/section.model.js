@@ -3,13 +3,13 @@ const { Schema, model } = mongoose;
 
 const sectionSchema = new Schema(
   {
-    schoolId: { type: Schema.Types.ObjectId, ref: "SchoolModel",  },
-    classId: { type: Schema.Types.ObjectId, ref: "ClassModel", },
+    schoolId: { type: Schema.Types.ObjectId, ref: "SchoolModel"},
+    classId: { type: Schema.Types.ObjectId, ref: "ClassModel"},
     
     name: { type: String, }, // e.g., "A", "B", "Rose"
     
     // ASSIGN TEACHER: Used for standard classes with sections
-    classTeacherId: { type: Schema.Types.ObjectId, ref: "UserModel", default: null },
+    classTeacherId: { type: [Schema.Types.ObjectId], ref: "UserModel", default: [] },
     
     // Optional: Room number and capacity
     roomNumber: { type: String },
@@ -20,6 +20,6 @@ const sectionSchema = new Schema(
 
 // Prevent duplicate section names within the same Class
 // sectionSchema.index({ classId: 1, name: 1 }, { unique: true });
-
+sectionSchema.index({ classId: 1});
 const SectionModel = model("SectionModel", sectionSchema);
 export default SectionModel;

@@ -72,5 +72,6 @@ const announcementSchema = new Schema(
 
 // Indexes for fast fetching by parents/students
 // announcementSchema.index({ schoolId: 1, targetAudience: 1, publishDate: -1 });
+announcementSchema.index({schoolId:1, academicYear:1});
 
 export const AnnouncementModel = mongoose.model("AnnouncementModel", announcementSchema);

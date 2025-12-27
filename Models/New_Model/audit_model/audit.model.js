@@ -45,5 +45,6 @@ const auditLogSchema = new mongoose.Schema(
 
 // Auto-expire logs after 1 year (Optional - saves DB space)
 // auditLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 31536000 });
+auditLogSchema.index({schoolId:1});
 
 export const AuditLogModel = mongoose.model("AuditLogModel", auditLogSchema);

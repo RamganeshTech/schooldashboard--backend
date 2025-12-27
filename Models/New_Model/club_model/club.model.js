@@ -75,6 +75,9 @@ const clubVideoSchema = new Schema({
 }, { timestamps: true });
 
 
+clubSchema.index({ schoolId: 1, });
+clubVideoSchema.index({clubId:1});
+
 const ClubVideoModel = mongoose.model('ClubVideoModel', clubVideoSchema);
 const ClubMainModel = mongoose.model('ClubMainModel', clubSchema);
 

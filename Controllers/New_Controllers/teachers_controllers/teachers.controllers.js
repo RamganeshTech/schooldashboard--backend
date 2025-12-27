@@ -50,7 +50,7 @@ export const manageTeacherAssignments = async (req, res) => {
       //        If teacher has NO assignment for this class -> Add All Sections.
       // =========================================================
       if (!sectionId) {
-        
+
         const hasAssignmentsForClass = currentAssignments.some(
           (asg) => asg.classId.toString() === classId
         );
@@ -60,15 +60,31 @@ export const manageTeacherAssignments = async (req, res) => {
           currentAssignments = currentAssignments.filter(
             (asg) => asg.classId.toString() !== classId
           );
+
+          // 2. NEW: Update DB Models (Remove teacherId)
+          if (classDoc.hasSections) {
+            // Remove teacher from ALL sections of this class
+            await SectionModel.updateMany(
+              { classId: classId },
+              { $pull: { classTeacherId: teacherId } }
+            );
+          } else {
+            // Remove teacher from Class (e.g. LKG)
+            await ClassModel.findByIdAndUpdate(classId, {
+              $pull: { classTeacherId: teacherId }
+            });
+          }
+
+
         } else {
           // >>> SELECT ALL (Scenario: Add All Grade 10)
-          
+
           if (classDoc.hasSections) {
             // Fetch all sections for this class from DB
             const allSections = await SectionModel.find({ classId: classId });
-            
+
             if (allSections.length === 0) {
-               errors.push(`Class ${classDoc.name} has no sections to assign.`);
+              errors.push(`Class ${classDoc.name} has no sections to assign.`);
             }
 
             // Add every section
@@ -78,12 +94,27 @@ export const manageTeacherAssignments = async (req, res) => {
                 sectionId: sec._id
               });
             });
+
+               // 2. NEW: Update DB Models (Add teacherId, no duplicates)
+            await SectionModel.updateMany(
+              { classId: classId }, 
+              { $addToSet: { classTeacherId: teacherId } }
+            );
+
           } else {
             // For LKG (No sections), just add the class
             currentAssignments.push({
               classId: classId,
               sectionId: null
             });
+
+            
+            // 2. NEW: Update Class Model
+            await ClassModel.findByIdAndUpdate(classId, { 
+              $addToSet: { classTeacherId: teacherId } 
+            });
+
+
           }
         }
         continue; // Move to next update item
@@ -93,7 +124,7 @@ export const manageTeacherAssignments = async (req, res) => {
       // SCENARIO B: SINGLE SECTION TOGGLE
       // Logic: If exists -> Remove. If missing -> Add.
       // =========================================================
-      
+
       // Validate Section ID if class has sections
       let targetSectionId = null;
       if (classDoc.hasSections) {
@@ -104,25 +135,51 @@ export const manageTeacherAssignments = async (req, res) => {
         // Optional: strict check if section belongs to class
         // const secCheck = await SectionModel.findById(sectionId);
         // if(secCheck.classId.toString() !== classId) continue; 
-        
+
         targetSectionId = sectionId;
       }
 
       // Check if this specific pair exists
       const existingIndex = currentAssignments.findIndex((asg) => {
-        return asg.classId.toString() === classId && 
-               String(asg.sectionId) === String(targetSectionId);
+        return asg.classId.toString() === classId &&
+          String(asg.sectionId) === String(targetSectionId);
       });
 
       if (existingIndex !== -1) {
         // >>> EXISTS: REMOVE IT (Scenario 1)
         currentAssignments.splice(existingIndex, 1);
+
+           // 2. NEW: Remove from DB Models
+        if (classDoc.hasSections) {
+           await SectionModel.findByIdAndUpdate(targetSectionId, { 
+             $pull: { classTeacherId: teacherId } 
+           });
+        } else {
+           await ClassModel.findByIdAndUpdate(classId, { 
+             $pull: { classTeacherId: teacherId } 
+           });
+        }
+
+
       } else {
         // >>> MISSING: ADD IT (Scenario 2)
         currentAssignments.push({
           classId: classId,
           sectionId: targetSectionId
         });
+
+         // 2. NEW: Add to DB Models (Prevent Duplicates with $addToSet)
+        if (classDoc.hasSections) {
+           await SectionModel.findByIdAndUpdate(targetSectionId, { 
+             $addToSet: { classTeacherId: teacherId } 
+           });
+        } else {
+           await ClassModel.findByIdAndUpdate(classId, { 
+             $addToSet: { classTeacherId: teacherId } 
+           });
+        }
+
+
       }
     }
 
@@ -134,13 +191,13 @@ export const manageTeacherAssignments = async (req, res) => {
     teacher.assignments = currentAssignments;
     await teacher.save();
 
-     await createAuditLog(req, {
-            action: "edit",
-            module: "teacher",
-            targetId: teacherId,
-            description: `teacher class assign got updated (${teacherId})`,
-            status: "success"
-        });
+    await createAuditLog(req, {
+      action: "edit",
+      module: "teacher",
+      targetId: teacherId,
+      description: `teacher class assign got updated (${teacherId})`,
+      status: "success"
+    });
 
     return res.status(200).json({
       ok: true,
@@ -275,7 +332,7 @@ export const getAllClassesWithSections = async (req, res) => {
     // 2. Fetch all Sections associated with these classes
     // We filter by the IDs of the classes we just found
     const classIds = classes.map((c) => c._id);
-    
+
     const sections = await SectionModel.find({ classId: { $in: classIds } })
       .select("name classId _id")
       .sort({ name: 1 }) // Sort sections (A, B, C...)
@@ -293,7 +350,7 @@ export const getAllClassesWithSections = async (req, res) => {
         name: cls.name,
         hasSections: cls.hasSections,
         // If class has sections, attach them. If not, empty array.
-        sections: classSections 
+        sections: classSections
       };
     });
 

@@ -3,6 +3,7 @@ import { assignStudentToParent, createStudentProfile, deleteStudent, getAllStude
 // import { upload } from "../../../Utils/s3upload.js";
 import { multiRoleAuth } from "../../../Middleware/multiRoleRequest.js";
 import { upload } from "../../../Utils/s4UploadsNew.js";
+import { featureGuard } from "../../../Middleware/featureGuard.js";
 
 const studentRoutes = express.Router();
 
@@ -14,6 +15,8 @@ const studentRoutes = express.Router();
 studentRoutes.post(
   "/create",
   multiRoleAuth("correspondent", "administrator", "accountant",),
+    featureGuard("studentRecord"),
+  
   upload.single("file"), // Image
   createStudentProfile
 );
@@ -22,6 +25,8 @@ studentRoutes.post(
 studentRoutes.put(
   "/update/:id",
   multiRoleAuth("correspondent", "administrator", "accountant",),
+    featureGuard("studentRecord"),
+
   upload.single("file"), // Image
   updateStudent
 );
@@ -29,16 +34,18 @@ studentRoutes.put(
 // DELETE
 studentRoutes.delete(
   "/delete/:id",
-  //   multiRoleAuth("PlatformAdmin", "Correspondent", "Principal"), 
   multiRoleAuth("correspondent"),
+    featureGuard("studentRecord"),
+
   deleteStudent
 );
 
 // GET SINGLE
 studentRoutes.get(
   "/get/:id",
-  //   multiRoleAuth("PlatformAdmin", "Correspondent", "Principal", "Accountant", "Teacher"), 
   multiRoleAuth("correspondent", "administrator", "principal", "accountant", "teacher"),
+    featureGuard("studentRecord"),
+
 
   getStudentById
 );
@@ -47,8 +54,9 @@ studentRoutes.get(
 // Usage: /api/students/list?schoolId=123&classId=456&page=1&limit=20
 studentRoutes.get(
   "/getall",
-  //   multiRoleAuth("PlatformAdmin", "Correspondent", "Principal", "Accountant", "Teacher"), 
   multiRoleAuth("correspondent", "administrator", "principal", "accountant", "teacher"),
+    featureGuard("studentRecord"),
+
 
   getAllStudents
 );
@@ -56,6 +64,8 @@ studentRoutes.get(
 studentRoutes.put(
   "/assignstudent",
   multiRoleAuth("correspondent", "administrator"),
+    featureGuard("studentRecord"),
+
   assignStudentToParent
 );
 
@@ -63,6 +73,8 @@ studentRoutes.put(
 studentRoutes.put(
   "/removestudent",
   multiRoleAuth("correspondent", "administrator"),
+    featureGuard("studentRecord"),
+
   removeStudentFromParent
 );
 
