@@ -1072,7 +1072,7 @@ export const updateConcessionDetails = async (req, res) => {
 export const uploadConcessionProof = async (req, res) => {
     try {
         const { schoolId, studentRecordId } = req.body;
-        const file = req.files[0];
+        const file = req.file;
 
         console.log("gettin cale proof", schoolId, studentRecordId, file)
 

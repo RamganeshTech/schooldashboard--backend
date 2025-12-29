@@ -49,7 +49,7 @@ studentRecordRoutes.put(
   multiRoleAuth("correspondent", "accountant", "principal"),
   featureGuard("studentRecord"),
 
-  upload.array("file"),
+  upload.single("file"),
   uploadConcessionProof
 );
 
