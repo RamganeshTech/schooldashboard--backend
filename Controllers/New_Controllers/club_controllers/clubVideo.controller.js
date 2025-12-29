@@ -14,6 +14,10 @@ export const createClubVideo = async (req, res) => {
         let { schoolId, clubId, title, topic, level, academicYear } = req.body;
         const file = req.file; // CHANGED: Access array of files
 
+        console.log("file", file)
+
+
+        // return res.status(200).json({ok:true});
 
         if (!academicYear) {
             // // 1. Get Academic Year (Source of Truth)
@@ -59,7 +63,7 @@ export const createClubVideo = async (req, res) => {
         });
 
         res.status(201).json({
-            ok: true, message: `${savedVideos.length} videos uploaded successfully`,
+            ok: true, message: `videos uploaded successfully`,
             data: savedVideos
         });
 

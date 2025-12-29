@@ -12,14 +12,18 @@ const clubRoutes = express.Router();
 // ==========================================
 // Get all clubs (Supports pagination ?page=1&limit=10&schoolId=...)
 clubRoutes.get('/getall', 
-        featureGuard("club"),
-
-    multiRoleAuth("correspondent", "principal", "teacher", "parent", "administrator", "accountant" , "viceprincipal"), getAllClubs);
+    
+    multiRoleAuth("correspondent", "principal", "teacher", "parent", "administrator", "accountant" , "viceprincipal"),
+    featureGuard("club"),
+    
+    getAllClubs);
 
 // Get single club details
 clubRoutes.get('/get/:id', 
-        featureGuard("club"),
-    multiRoleAuth("correspondent", "principal", "teacher", "parent", "administrator", "accountant" , "viceprincipal"), getClubById);
+    multiRoleAuth("correspondent", "principal", "teacher", "parent", "administrator", "accountant" , "viceprincipal"),
+    featureGuard("club"),
+    
+    getClubById);
 
 
 // ==========================================
@@ -28,23 +32,31 @@ clubRoutes.get('/get/:id',
 
 // Create a new Club (Multipart form-data: fields + 'thumbnail' file)
 clubRoutes.post('/create', 
-        featureGuard("club"),
-    multiRoleAuth("correspondent", "administrator"), upload.single('thumbnail'),  createClub);
+    multiRoleAuth("correspondent", "administrator"),
+    featureGuard("club"),
+    
+    upload.single('thumbnail'),  createClub);
 
 // Update text details only (Name, Description, isActive)
 clubRoutes.put('/updatetext/:id',  
-        featureGuard("club"),
-    multiRoleAuth("correspondent", "administrator"), updateClubText);
+    multiRoleAuth("correspondent", "administrator"),
+    featureGuard("club"),
+    
+    updateClubText);
 
 // Update thumbnail only (Multipart form-data: 'thumbnail' file)
 clubRoutes.put('/updatethumbnail/:id', 
-        featureGuard("club"),
-    multiRoleAuth("correspondent", "administrator"), upload.single('thumbnail'), updateClubThumbnail);
+    multiRoleAuth("correspondent", "administrator"),
+    featureGuard("club"),
+    
+    upload.single('thumbnail'), updateClubThumbnail);
 
 // Delete Club (and cascades to delete videos)
 clubRoutes.delete('/delete/:id',  
-        featureGuard("club"),
-    multiRoleAuth("correspondent", "administrator"), deleteClub);
+    multiRoleAuth("correspondent", "administrator"),
+    featureGuard("club"),
+    
+    deleteClub);
 
 
 
@@ -56,13 +68,17 @@ clubRoutes.delete('/delete/:id',
 // {{baseURL}}/api/club/video/getall?clubId=694a3de7e615dd6fec381c3e&page=1&limit=10
 
 clubRoutes.get('/video/getall', 
-        featureGuard("club"),
-    multiRoleAuth("correspondent", "principal", "teacher", "parent", "administrator", "accountant" , "viceprincipal"), getAllClubVideos);
+    multiRoleAuth("correspondent", "principal", "teacher", "parent", "administrator", "accountant" , "viceprincipal"), 
+    
+    featureGuard("club"),
+    getAllClubVideos);
 
 // Get single video details
 clubRoutes.get('/video/get/:id',
-        featureGuard("club"),
-    multiRoleAuth("correspondent", "principal", "teacher", "parent", "administrator", "accountant" , "viceprincipal"),  getClubVideoById);
+    multiRoleAuth("correspondent", "principal", "teacher", "parent", "administrator", "accountant" , "viceprincipal"), 
+    
+    featureGuard("club"),
+    getClubVideoById);
 // {{baseURL}}/api/club/video/get/
 
 
@@ -74,22 +90,32 @@ clubRoutes.get('/video/get/:id',
 // {{baseURL}}/api/club/video/upload/
 
 clubRoutes.post('/video/upload',
-        featureGuard("club"),
-    multiRoleAuth("correspondent", "administrator"), upload.single('video'),   createClubVideo);
+    multiRoleAuth("correspondent", "administrator"), 
+    upload.single('video'),
+    
+    featureGuard("club"),
+    createClubVideo);
 
 // Update details only (Title, Topic, Level) - No file upload here
 clubRoutes.put('/video/updatedetails/:id',  
-        featureGuard("club"),
-    multiRoleAuth("correspondent", "administrator"), updateClubVideoDetails);
+    multiRoleAuth("correspondent", "administrator"),
+    
+    featureGuard("club"),
+    updateClubVideoDetails);
 
 // Update VIDEO FILE only (Multipart form-data: 'video' file) - Re-uploads the file
 clubRoutes.put('/video/updatefile/:id',  
-        featureGuard("club"),
-    multiRoleAuth("correspondent", "administrator"), upload.single('video'), updateClubVideoFile);
+    multiRoleAuth("correspondent", "administrator"),
+    upload.single('video'),
+    
+    featureGuard("club"),
+     updateClubVideoFile);
 
 // Delete Video
 clubRoutes.delete('/video/delete/:id', 
-        featureGuard("club"),
-    multiRoleAuth("correspondent", "administrator"), deleteClubVideo);
+    multiRoleAuth("correspondent", "administrator"),
+    
+    featureGuard("club"),
+    deleteClubVideo);
 
 export default clubRoutes;
