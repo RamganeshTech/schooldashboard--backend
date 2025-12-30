@@ -35,7 +35,9 @@ clubRoutes.post('/create',
     multiRoleAuth("correspondent", "administrator"),
     featureGuard("club"),
     
-    upload.single('thumbnail'),  createClub);
+    upload.single('thumbnail'),
+    
+    createClub);
 
 // Update text details only (Name, Description, isActive)
 clubRoutes.put('/updatetext/:id',  
@@ -47,9 +49,11 @@ clubRoutes.put('/updatetext/:id',
 // Update thumbnail only (Multipart form-data: 'thumbnail' file)
 clubRoutes.put('/updatethumbnail/:id', 
     multiRoleAuth("correspondent", "administrator"),
+    upload.single('thumbnail'), 
     featureGuard("club"),
     
-    upload.single('thumbnail'), updateClubThumbnail);
+    
+    updateClubThumbnail);
 
 // Delete Club (and cascades to delete videos)
 clubRoutes.delete('/delete/:id',  
