@@ -284,7 +284,8 @@ export const loginUser = async (req, res) => {
         role: user.role,
         isPlatformAdmin: user.isPlatformAdmin || false,
         studentId: user?.studentId || [],
-        assignments: user?.assignments || []
+        assignments: user?.assignments || [],
+        schoolId: user.schoolId
       }
     });
 
@@ -321,7 +322,7 @@ export const isAuthenticated = async (req, res) => {
       return res.status(404).json({ ok: false, message: "User id not found" });
     }
 
-    const isExist = await UserModel.findById(user._id);
+    const isExist = await UserModel.findById(user._id).populate("schoolId", "-subscription -isActive -schoolCode")
 
     if (!isExist) {
       return res.status(404).json({ ok: false, message: "User not found" });
@@ -335,7 +336,10 @@ export const isAuthenticated = async (req, res) => {
       phoneNo: isExist.phoneNo,
       userName: isExist.userName,
       isAuthenticated: true,
-      isPlatformAdmin: isExist?.isPlatformAdmin || false
+      isPlatformAdmin: isExist?.isPlatformAdmin || false,
+      studentId: user?.studentId || [],
+      assignments: user?.assignments || [],
+      schoolId: user.schoolId
     };
 
 
@@ -543,7 +547,7 @@ export const assignRolesToUser = async (req, res) => {
       return res.status(404).json({ ok: false, message: "User not found" });
     }
 
-     await createAuditLog(req, {
+    await createAuditLog(req, {
       action: "edit",
       module: "user",
       targetId: updatedUser._id,
