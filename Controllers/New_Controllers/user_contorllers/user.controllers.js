@@ -282,7 +282,9 @@ export const loginUser = async (req, res) => {
         email: user.email,
         phoneNo: user.phoneNo,
         role: user.role,
-        isPlatformAdmin: user.isPlatformAdmin || false
+        isPlatformAdmin: user.isPlatformAdmin || false,
+        studentId: user.studentId || [],
+        assignments: user.assignments || []
       }
     });
 

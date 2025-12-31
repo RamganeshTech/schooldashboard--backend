@@ -51,8 +51,8 @@ expenseRoutes.put(
     multiRoleAuth("correspondent"),
     featureGuard("expense"),
     upload.fields([
-        { name: "billProof"}, 
-        { name: "workProof"} 
+      { name: "billProof"}, 
+      { name: "workProof"} 
     ]), 
     updateExpense
 );
