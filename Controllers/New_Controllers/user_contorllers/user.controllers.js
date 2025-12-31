@@ -246,7 +246,7 @@ export const loginUser = async (req, res) => {
         { email: identifier },
         { phoneNo: identifier }
       ]
-    });
+    }).populate("schoolId", "-subscription -isActive -schoolCode")
 
     // const user = await UserModel.findOne({ phoneNo })
     if (!user) {
@@ -283,8 +283,8 @@ export const loginUser = async (req, res) => {
         phoneNo: user.phoneNo,
         role: user.role,
         isPlatformAdmin: user.isPlatformAdmin || false,
-        studentId: user.studentId || [],
-        assignments: user.assignments || []
+        studentId: user?.studentId || [],
+        assignments: user?.assignments || []
       }
     });
 
