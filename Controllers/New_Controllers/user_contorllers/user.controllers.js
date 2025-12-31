@@ -264,7 +264,7 @@ export const loginUser = async (req, res) => {
       {
         _id: user._id, role: user?.role || null, userName: user?.userName,
         email: user.email, phoneNo: user.phoneNo,
-        isPlatformAdmin: user?.isPlatformAdmin || false, schoolId: user.schoolId
+        isPlatformAdmin: user?.isPlatformAdmin || false, schoolId: user.schoolId?._id
       },
       JWT_SECRET,
       { expiresIn: "7d" }
@@ -285,7 +285,7 @@ export const loginUser = async (req, res) => {
         isPlatformAdmin: user.isPlatformAdmin || false,
         studentId: user?.studentId || [],
         assignments: user?.assignments || [],
-        schoolId: user.schoolId
+        schoolId: user?.schoolId
       }
     });
 
