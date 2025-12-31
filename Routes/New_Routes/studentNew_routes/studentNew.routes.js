@@ -43,7 +43,7 @@ studentRoutes.delete(
 // GET SINGLE
 studentRoutes.get(
   "/get/:id",
-  multiRoleAuth("correspondent", "administrator", "principal", "accountant", "teacher"),
+  multiRoleAuth("correspondent", "administrator", "principal", "accountant", "teacher", "parent"),
     featureGuard("studentRecord"),
 
 
@@ -54,7 +54,7 @@ studentRoutes.get(
 // Usage: /api/students/list?schoolId=123&classId=456&page=1&limit=20
 studentRoutes.get(
   "/getall",
-  multiRoleAuth("correspondent", "administrator", "principal", "accountant", "teacher"),
+  multiRoleAuth("correspondent", "administrator", "principal", "accountant", "teacher", "parent"),
     featureGuard("studentRecord"),
 
 

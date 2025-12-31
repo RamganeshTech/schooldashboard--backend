@@ -37,7 +37,7 @@ studentRecordRoutes.post(
 
 studentRecordRoutes.put(
   "/updatevalue",
-  multiRoleAuth("correspondent", "accountant", "principal"),
+  multiRoleAuth("correspondent", "accountant", "principal", ),
   featureGuard("studentRecord"),
   // "files" is the key name for form-data. 10 is max count.
   updateConcessionDetails
@@ -66,7 +66,7 @@ studentRecordRoutes.post(
 
 studentRecordRoutes.get(
   "/getrecord/:schoolId/:studentId",
-  multiRoleAuth("administrator", "correspondent", "principal", "viceprincipal", "accountant"),
+  multiRoleAuth("administrator", "correspondent", "principal", "viceprincipal", "accountant","teacher", "parent"),
   featureGuard("studentRecord"),
 
   getStudentRecordById
