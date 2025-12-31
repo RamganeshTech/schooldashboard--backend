@@ -339,7 +339,7 @@ export const isAuthenticated = async (req, res) => {
       isPlatformAdmin: isExist?.isPlatformAdmin || false,
       studentId: user?.studentId || [],
       assignments: user?.assignments || [],
-      schoolId: user.schoolId
+      schoolId: user?.schoolId || null
     };
 
 

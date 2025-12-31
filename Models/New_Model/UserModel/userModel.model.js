@@ -25,7 +25,7 @@ const userSchema = new Schema(
     },
     phoneNo: { type: String },
     schoolCode: { type: String, default: null },
-    schoolId: { type: mongoose.Schema.ObjectId, default: null, ref: "Schoolmodel" },
+    schoolId: { type: mongoose.Schema.ObjectId, default: null, ref: "SchoolModel" },
     isPlatformAdmin: { type: Boolean }, // internal field for conditional storage
 
     // only for teachers
