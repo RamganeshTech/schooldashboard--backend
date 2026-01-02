@@ -73,6 +73,15 @@ studentRecordRoutes.get(
 );
 
 
+studentRecordRoutes.get(
+  "/getall",
+  multiRoleAuth("correspondent", "accountant", "principal", "administrator", "viceprincipal","teacher", "parent"),
+  featureGuard("studentRecord"),
+
+  getAllStudentRecords
+);
+
+
 studentRecordRoutes.delete(
   "/deleterecord/:id",
   multiRoleAuth("correspondent"), // Only Top-Level Access
@@ -97,14 +106,6 @@ studentRecordRoutes.put(
   featureGuard("studentRecord"),
 
   revertFeeTransaction
-);
-
-studentRecordRoutes.get(
-  "/getall",
-  multiRoleAuth("correspondent", "accountant", "principal", "administrator", "viceprincipal"),
-  featureGuard("studentRecord"),
-
-  getAllStudentRecords
 );
 
 

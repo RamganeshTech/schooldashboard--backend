@@ -91,3 +91,45 @@ export const getUsersBySchool = async (req, res) => {
         return res.status(500).json({ ok: false, message: "Internal server error", error: error.message });
     }
 };
+
+
+
+export const getSingleUser = async (req, res) => {
+    try {
+        // 1. Get School ID
+        // If the user is logged in (Principal/Admin), use their schoolId.
+        // If a Platform Admin is querying, they might pass it in query params.
+        const userId = req.params.userId
+
+
+     
+        if (!userId) {
+            return res.status(400).json({ ok: false, message: "user ID is required" });
+        }
+
+
+        // 2. Query
+        const user = await UserModel.findById(userId)
+            .select("-password -__v") // Exclude password and internal version key
+            .populate({
+                path: "assignments.classId", // 1. Populate Class
+                select: "name _id"           // Only get Name and ID
+            })
+            .populate({
+                path: "assignments.sectionId", // 2. Populate Section
+                select: "name _id"             // Only get Name and ID
+            })
+            .populate({
+                path:"studentId"
+            });
+
+        return res.status(200).json({
+            ok: true,
+            data: user,
+        });
+
+    } catch (error) {
+        console.error("Get user Error:", error);
+        return res.status(500).json({ ok: false, message: "Internal server error", error: error.message });
+    }
+};

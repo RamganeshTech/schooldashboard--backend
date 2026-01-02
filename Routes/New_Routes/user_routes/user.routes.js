@@ -1,7 +1,7 @@
 import express from 'express'
 import { assignRolesToUser, createUser, deleteUser, isAuthenticated, loginUser, logoutUser, updateUser } from '../../../Controllers/New_Controllers/user_contorllers/user.controllers.js';
 import { multiRoleAuth } from '../../../Middleware/multiRoleRequest.js';
-import { getUsersBySchool } from '../../../Controllers/New_Controllers/user_contorllers/userUtil.controller.js';
+import { getSingleUser, getUsersBySchool } from '../../../Controllers/New_Controllers/user_contorllers/userUtil.controller.js';
 
 const userRoutes = express.Router()
 
@@ -29,6 +29,12 @@ userRoutes.get(
     "/:role/:schoolId",
     multiRoleAuth("correspondent", "teacher", "principal", "administrator", "viceprincipal"),
     getUsersBySchool
+);
+
+userRoutes.get(
+    "/:userId",
+    multiRoleAuth("correspondent", "teacher", "principal", "administrator", "viceprincipal", "parent", "accountant"),
+    getSingleUser
 );
 
 
