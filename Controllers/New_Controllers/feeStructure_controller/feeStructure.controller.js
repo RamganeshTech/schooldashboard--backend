@@ -1,5 +1,6 @@
 import FeeStructureModel from "../../../Models/New_Model/FeeStructureModel/FeeStructure.model.js";
 import { createAuditLog } from "../audit_controllers/audit.controllers.js";
+import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
 
 // ==========================================
 // SET / UPDATE FEE STRUCTURE
@@ -47,7 +48,7 @@ export const setFeeStructure = async (req, res) => {
     // 4. Upsert (Update if exists, Create if new)
     // Filter: find by schoolId AND classId
     const updatedFee = await FeeStructureModel.findOneAndUpdate(
-      { schoolId, classId },
+      { schoolId, classId, type, },
       {
         $set: {
           feeHead: {
@@ -126,5 +127,43 @@ export const getFeeStructureByClass = async (req, res) => {
   } catch (error) {
     console.error("Get Fee Error:", error);
     return res.status(500).json({ ok: false, message: "Internal server error" });
+  }
+};
+
+
+
+
+
+export const deleteFeeStructure = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+
+    const updatedFee = await FeeStructureModel.findByIdAndDelete(
+      id
+    );
+
+
+
+
+    await archiveData({
+      schoolId: updatedFee.schoolId,
+      category: "student fee record",
+      originalId: updatedFee._id,
+      deletedData: updatedFee.toObject(), // Convert Mongoose doc to plain object
+      deletedBy: req.user._id || null,
+      reason: null, // Optional reason from body
+    });
+
+
+    return res.status(200).json({
+      ok: true,
+      message: `Fee structure deleted successfully`,
+      data: updatedFee
+    });
+
+  } catch (error) {
+    console.error("Set Fee Error:", error);
+    return res.status(500).json({ ok: false, message: "Internal server error", error: error.message });
   }
 };
