@@ -1,23 +1,24 @@
 import mongoose from "mongoose";
 
 const FeeStructureSchema = mongoose.Schema({
-    schoolId: { type: mongoose.Schema.Types.ObjectId, ref: "SchoolModel", },
-    
-    // The Standard: Fees are defined per Class, per Year
-    // academicYear: { type: String, required: true }, // e.g., "2025-2026"
-    classId: { type: mongoose.Schema.Types.ObjectId, ref: "ClassModel",},
+  schoolId: { type: mongoose.Schema.Types.ObjectId, ref: "SchoolModel", },
 
-    // The Fixed Amounts (The Limits)
-    feeHead: {
-      admissionFee: { type: Number, default: 0 },
-        firstTermAmt: { type: Number, default: 0 },
-        secondTermAmt: { type: Number, default: 0 },
-        // annualFee: { type: Number, default: 0 },
-        busFirstTermAmt: { type: Number, default: 0 },
-        busSecondTermAmt: { type: Number, default: 0 },
-    },
+  // The Standard: Fees are defined per Class, per Year
+  // academicYear: { type: String, required: true }, // e.g., "2025-2026"
+  classId: { type: mongoose.Schema.Types.ObjectId, ref: "ClassModel", },
 
-    totalAmount: { type: Number, default: 0 } // Auto-calculated sum
+  type: { type: String, default: null },
+  // The Fixed Amounts (The Limits)
+  feeHead: {
+    admissionFee: { type: Number, default: 0 },
+    firstTermAmt: { type: Number, default: 0 },
+    secondTermAmt: { type: Number, default: 0 },
+    // annualFee: { type: Number, default: 0 },
+    busFirstTermAmt: { type: Number, default: 0 },
+    busSecondTermAmt: { type: Number, default: 0 },
+  },
+
+  totalAmount: { type: Number, default: 0 } // Auto-calculated sum
 
 }, { timestamps: true });
 
@@ -25,7 +26,7 @@ const FeeStructureSchema = mongoose.Schema({
 // ClassFeeMasterSchema.index({ schoolId: 1, classId: 1, academicYear: 1 }, { unique: true });
 
 
-FeeStructureSchema.index({schoolId:1, classId:1});
+FeeStructureSchema.index({ schoolId: 1, classId: 1 });
 
 const FeeStructureModel = mongoose.model('FeeStructureModel', FeeStructureSchema);
 

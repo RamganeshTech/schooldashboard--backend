@@ -16,6 +16,10 @@ export const assignStudentToClass = async (req, res) => {
             return res.status(400).json({ ok: false, message: "schoolId, studentId, and classId are required." });
         }
 
+         if (!newOld) {
+            return res.status(400).json({ ok: false, message: "newOld is required, it should be either new or old only " });
+        }
+
         // 2. Determine Academic Year
         if (!academicYear) {
             const schoolDoc = await SchoolModel.findById(schoolId);
@@ -98,7 +102,8 @@ export const assignStudentToClass = async (req, res) => {
         // 4. FETCH MASTER FEE STRUCTURE (The Menu)
         const masterFee = await FeeStructureModel.findOne({
             schoolId,
-            classId: classId
+            classId: classId,
+            type: newOld
         });
 
         if (!masterFee) {

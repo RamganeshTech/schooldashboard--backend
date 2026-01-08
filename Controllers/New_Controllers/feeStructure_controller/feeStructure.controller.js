@@ -1,20 +1,20 @@
-// import FeeStructureModel from "../models/FeeStructureModel.js";
-// import ClassModel from "../models/ClassModel.js";
-// import mongoose from "mongoose";
 import FeeStructureModel from "../../../Models/New_Model/FeeStructureModel/FeeStructure.model.js";
 import { createAuditLog } from "../audit_controllers/audit.controllers.js";
-// import ClassModel from './../../../Models/New_Model/SchoolModel/classModel.model.js';
 
 // ==========================================
 // SET / UPDATE FEE STRUCTURE
 // ==========================================
 export const setFeeStructure = async (req, res) => {
   try {
-    const { schoolId, classId, feeHead } = req.body;
+    const { schoolId, classId, feeHead, type } = req.body;
 
     // 1. Basic Validation
     if (!schoolId || !classId || !feeHead) {
       return res.status(400).json({ ok: false, message: "schoolId, classId, and feeHead are required" });
+    }
+
+    if (!type || type !== "old" || type !== "new") {
+      return res.status(400).json({ ok: false, message: "type is required, it should be either new or old only " });
     }
 
 
@@ -54,7 +54,8 @@ export const setFeeStructure = async (req, res) => {
             busFirstTermAmt: feeHead.busFirstTermAmt,
             busSecondTermAmt: feeHead.busSecondTermAmt
           },
-          totalAmount: totalAcademicFee
+          totalAmount: totalAcademicFee,
+          type: type
         }
       },
       { new: true, upsert: true, runValidators: true }
@@ -100,6 +101,7 @@ export const getFeeStructureByClass = async (req, res) => {
         ok: true,
         message: "No fee structure found, returning default",
         data: {
+          type: null,
           feeHead: {
             admissionFee: 0,
             firstTermAmt: 0,

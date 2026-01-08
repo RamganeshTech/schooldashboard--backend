@@ -57,6 +57,10 @@ export const collectFeeAndManageRecord = async (req, res) => {
             throw new Error("Missing required fields: schoolId, studentId, classId, paymentMode");
         }
 
+        if (!newOld) {
+            return res.status(400).json({ ok: false, message: "newOld is required, it should be either new or old only " });
+        }
+
         // 2. GET ACADEMIC YEAR
         const schoolDoc = await SchoolModel.findById(schoolId).session(session);
         if (!schoolDoc) throw new Error("School not found");
@@ -99,7 +103,7 @@ export const collectFeeAndManageRecord = async (req, res) => {
             }
 
             // Get Master Fee Structure
-            const masterFee = await FeeStructureModel.findOne({ schoolId, classId }).session(session);
+            const masterFee = await FeeStructureModel.findOne({ schoolId, classId, type: newOld }).session(session);
             if (!masterFee) throw new Error("Fee Structure not found for this class");
 
             // Initialize Structure (Before Concession)
@@ -489,7 +493,7 @@ export const collectFeeAndManageRecord = async (req, res) => {
             // ---------------------------------------------------------
         }
 
-         await createAuditLog(req, {
+        await createAuditLog(req, {
             action: "create",
             module: "student_record",
             targetId: studentRecord._id,
@@ -712,6 +716,11 @@ export const applyConcession = async (req, res) => {
             throw new Error("Missing required fields");
         }
 
+
+        if (!newOld) {
+            return res.status(400).json({ ok: false, message: "newOld is required, it should be either new or old only " });
+        }
+
         // 3. ROLE PROOF CHECK
         const userRole = req.user.role.toLowerCase();
         const isExempt = ["correspondent", "principal"].includes(userRole);
@@ -796,11 +805,10 @@ export const applyConcession = async (req, res) => {
 
         // 6. FETCH MASTER FEES (The Menu)
         const masterFee = await FeeStructureModel.findOne({
-            schoolId, classId: targetClassId
+            schoolId, classId: targetClassId, type: newOld
         }).session(session);
 
         if (!masterFee) throw new Error("Master Fee Structure not found, please define the fee structrue for the selected class");
-
 
 
         // Upload Single File to S3
@@ -939,7 +947,7 @@ export const applyConcession = async (req, res) => {
             );
         }
 
-          await createAuditLog(req, {
+        await createAuditLog(req, {
             action: "edit",
             module: "student_record",
             targetId: studentRecord._id,
@@ -1401,7 +1409,7 @@ export const toggleStudentRecordStatus = async (req, res) => {
             return res.status(404).json({ ok: false, message: "Student Record not found" });
         }
 
-         await createAuditLog(req, {
+        await createAuditLog(req, {
             action: "edit",
             module: "student_record",
             targetId: updatedRecord._id,
