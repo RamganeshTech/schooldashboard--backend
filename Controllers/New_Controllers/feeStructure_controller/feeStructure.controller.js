@@ -13,8 +13,11 @@ export const setFeeStructure = async (req, res) => {
       return res.status(400).json({ ok: false, message: "schoolId, classId, and feeHead are required" });
     }
 
-    if (!type || type !== "old" || type !== "new") {
-      return res.status(400).json({ ok: false, message: "type is required, it should be either new or old only " });
+    if (!type || (type !== "old" && type !== "new")) {
+      return res.status(400).json({
+        ok: false,
+        message: "type is required, it should be either new or old only"
+      });
     }
 
 
