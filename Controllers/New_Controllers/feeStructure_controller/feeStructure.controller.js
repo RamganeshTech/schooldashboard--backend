@@ -96,7 +96,7 @@ export const getFeeStructureByClass = async (req, res) => {
       return res.status(400).json({ ok: false, message: "schoolId and classId are required" });
     }
 
-    const feeStructure = await FeeStructureModel.findOne({ schoolId, classId });
+    const feeStructure = await FeeStructureModel.find({ schoolId, classId });
 
     if (!feeStructure) {
       // If no structure exists, return 0s so frontend doesn't break
