@@ -13,6 +13,27 @@ import { archiveData } from "../deleteArchieve_controller/deleteArchieve.control
 import { FinanceLedgerModel } from "../../../Models/New_Model/financeLedger_model/financeLedger.model.js";
 import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 
+
+
+
+const processFiles = async (filesArray) => {
+    if (!filesArray || filesArray.length === 0) return [];
+    return await Promise.all(
+        filesArray.map(async (file) => {
+            const uploadData = await uploadFileToS3New(file);
+            const type = file.mimetype.startsWith("image") ? "image" : "pdf";
+            return {
+                url: uploadData.url,
+                key: uploadData.key,
+                type: type,
+                originalName: file.originalname,
+                uploadedAt: new Date()
+            };
+        })
+    );
+};
+
+
 // Helper: Generate Receipt Number (REC-YYYY-0001)
 const generateReceiptNo = async (schoolId, session) => {
     const year = new Date().getFullYear();
@@ -38,7 +59,7 @@ export const collectFeeAndManageRecord = async (req, res) => {
     session.startTransaction();
 
     try {
-        const {
+        let {
             schoolId, studentId, studentName, classId, sectionId,
             amount, paymentMode, cashDenominations,
             referenceNumber, bankName, chequeDate, remarks,
@@ -50,6 +71,23 @@ export const collectFeeAndManageRecord = async (req, res) => {
             newOld  // (optional)
         } = req.body;
 
+        const files = req.files
+
+        amount = Number(amount || 0);
+        manualDueAllocation = manualDueAllocation === true || manualDueAllocation === "true";
+        isBusApplicable = isBusApplicable === true || isBusApplicable === "true";
+
+
+        if (cashDenominations && typeof cashDenominations === "string") {
+            cashDenominations = JSON.parse(cashDenominations);
+        }
+
+        if (paidHeads && typeof paidHeads === "string") {
+            paidHeads = JSON.parse(paidHeads);
+        }
+
+
+
         const payingAmount = Number(amount || 0);
 
         // 1. BASIC VALIDATION
@@ -60,6 +98,10 @@ export const collectFeeAndManageRecord = async (req, res) => {
         if (!newOld) {
             return res.status(400).json({ ok: false, message: "newOld is required, it should be either new or old only " });
         }
+
+
+
+
 
         // 2. GET ACADEMIC YEAR
         const schoolDoc = await SchoolModel.findById(schoolId).session(session);
@@ -433,6 +475,8 @@ export const collectFeeAndManageRecord = async (req, res) => {
             // }], { session });
 
 
+            const uploadedProof = await processFiles(files);
+
             // --- CHANGED FROM .create() TO new Model() ---
             const newReceiptEntry = new FeeTransactionModel({
                 schoolId,
@@ -444,6 +488,8 @@ export const collectFeeAndManageRecord = async (req, res) => {
                 paymentMode: paymentMode.toLowerCase(),
                 amountPaid: payingAmount,
                 allocation: receiptAllocationList,
+
+                proofUpload: uploadedProof || [],
 
                 cashDenominations: paymentMode.toLowerCase() === "cash"
                     ? (typeof cashDenominations === 'string' ? JSON.parse(cashDenominations) : cashDenominations)
@@ -504,12 +550,16 @@ export const collectFeeAndManageRecord = async (req, res) => {
         await session.commitTransaction();
         session.endSession();
 
+
+        console.log("get the things first",)
         return res.status(200).json({
             ok: true,
             message: "Transaction Successful",
             data: {
                 record: studentRecord,
-                receipt: receipt ? receipt[0] : null
+                // receipt: receipt ? receipt[0] : null
+                // receipt: "THIS_IS_FROM_NEW_CODE"
+                receipt: receipt || null
             }
         });
 

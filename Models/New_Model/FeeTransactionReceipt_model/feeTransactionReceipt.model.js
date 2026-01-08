@@ -11,6 +11,16 @@ const feeHeads = new Schema({
     amount: { type: Number, default: 0 }
 }, { _id: true })
 
+
+
+const uploadSchema = new Schema({
+    type: { type: String, enum: ["image", "pdf", "video"] },
+    key: { type: String, },
+    url: { type: String, },
+    originalName: String,
+    uploadedAt: { type: Date, default: new Date() }
+}, { _id: true });
+
 const FeeTransactionSchema = new mongoose.Schema({
     schoolId: { type: mongoose.Schema.Types.ObjectId, ref: "SchoolModel", },
     studentId: { type: mongoose.Schema.Types.ObjectId, ref: "StudentNewModel", },
@@ -25,7 +35,7 @@ const FeeTransactionSchema = new mongoose.Schema({
     amountPaid: { type: Number, },
 
     // The Allocation (Snapshot of what this receipt paid for)
-    allocation: {
+    allocation: {  
         type: [feeHeads], default: []
     },
 
@@ -34,6 +44,8 @@ const FeeTransactionSchema = new mongoose.Schema({
         type: [denominationSchema],
         default: []
     },
+
+    proofUpload : {type: [uploadSchema], default: []},
 
     // Cheque / UPI Details
     referenceNumber: { type: String },

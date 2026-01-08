@@ -121,6 +121,7 @@ export const getFeeStructureByClass = async (req, res) => {
 
     return res.status(200).json({
       ok: true,
+      message: "fetchedd fee structure for class",
       data: feeStructure
     });
 
