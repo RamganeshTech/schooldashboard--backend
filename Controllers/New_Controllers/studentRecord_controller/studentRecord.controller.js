@@ -68,7 +68,7 @@ export const collectFeeAndManageRecord = async (req, res) => {
             manualDueAllocation, // Boolean: True = use 'paidHeads', False = Auto FIFO
             paidHeads, // Required if manualDueAllocation is true
 
-            newOld  // (optional)
+            newOld  
         } = req.body;
 
         const files = req.files

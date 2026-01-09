@@ -1,14 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 
 
-// const uploadSchema = new Schema({
-//     type: { type: String, enum: ["image", "pdf"] },
-//     url: { type: String, },
-//     originalName: String,
-//     uploadedAt: { type: Date, default: new Date() }
-// });
-
-
 
 const uploadSchema = new Schema({
     type: { type: String, enum: ["image", "pdf"] },
@@ -27,6 +19,7 @@ const StudentNewSchema = mongoose.Schema({
         type: String,
     },
     // === BASIC INFO (Unchangeable/Static) ===
+    newOld: { type: String },
     studentName: { type: String, required: true, },
     studentImage: { type: uploadSchema, default: null },
 
@@ -103,8 +96,6 @@ const StudentNewSchema = mongoose.Schema({
 
 }, { timestamps: true });
 
-// CONSTRAINT: SR-ID must be unique per School
-// StudentNewSchema.index({ schoolId: 1, srId: 1 }, { unique: true });
 
 StudentNewSchema.pre("save", async function (next) {
     // 1. Only run this if we are creating a NEW student

@@ -19,6 +19,9 @@ export const createLedgerEntry = async ({
     createdBy       // User ID (Accountant/Admin)
 }, session = null) => {
     try {
+
+
+
         const newEntry = new FinanceLedgerModel({
             schoolId,
             academicYear,
@@ -39,6 +42,7 @@ export const createLedgerEntry = async ({
 
         // await newEntry.save();
 
+
         // ✅ USE SESSION ONLY IF PROVIDED
         if (session) {
             await newEntry.save({ session });
@@ -46,7 +50,7 @@ export const createLedgerEntry = async ({
             await newEntry.save();
         }
 
-        console.log(`[Ledger] New ${transactionType} entry created: ${amount}`);
+        console.log(`[Ledger] New ${transactionType} entry created: ${amount}`, newEntry);
         return newEntry;
     } catch (error) {
         // Critical Error: If Ledger fails, your financial reports will be wrong.

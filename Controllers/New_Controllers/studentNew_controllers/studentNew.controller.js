@@ -19,6 +19,7 @@ export const createStudentProfile = async (req, res) => {
             gender,
             dob,
             whatsappNumber,
+            newOld, 
             //   mandatory, 
             //   nonMandatory 
         } = req.body;
@@ -72,6 +73,7 @@ export const createStudentProfile = async (req, res) => {
             dob: dob || null,
             whatsappNumber: whatsappNumber || null,
             studentImage: uploadedImage,
+            newOld: newOld || null,
 
             // Since these are objects in schema, we pass them directly
             // If frontend sends nothing, they default to empty objects per schema
