@@ -526,6 +526,7 @@ export const collectFeeAndManageRecord = async (req, res) => {
                 referenceId: receipt._id, // Use the ID of the created receipt
                 // studentId: studentId, // Link the student
                 studentRecordId: studentRecord._id, // Link the Academic Record
+                feeReceiptId: newReceiptEntry._id,
                 category: "Student Fee", // Or specific head like "Term 1 Fee"
                 section: "student_record", // or "income"
                 paymentMode: paymentMode.toLowerCase(),

@@ -14,6 +14,7 @@ export const createLedgerEntry = async ({
     category,       // "Salary", "Term 1 Fee", etc.
     section,
     paymentMode,
+    feeReceiptId,
     description,
     createdBy       // User ID (Accountant/Admin)
 }, session = null) => {
@@ -28,6 +29,7 @@ export const createLedgerEntry = async ({
             referenceId,
             section,
             studentRecordId,
+            feeReceiptId,
             category,
             paymentMode,
             description,
@@ -147,6 +149,7 @@ export const getTransactionById = async (req, res) => {
 
         const transaction = await FinanceLedgerModel.findById(id)
             .populate("studentRecordId", "studentId className sectionName _id")
+            .populate("feeReceiptId")
             .populate("createdBy", "userName role _id")
             .populate("cancelledBy", "userName role _id");
 

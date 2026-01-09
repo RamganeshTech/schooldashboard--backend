@@ -55,6 +55,13 @@ const financeLedgerSchema = new mongoose.Schema(
             default: null,
         },
 
+
+        feeReceiptId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "FeeTransactionModel",
+            default: null,
+        },
+
         // e.g., "Term 1 Fee", "Generator Fuel", "Staff Salary"
         category: {
             type: String,
@@ -62,8 +69,8 @@ const financeLedgerSchema = new mongoose.Schema(
         },
 
 
-        section:{
-            type:String
+        section: {
+            type: String
         },
 
         // e.g., "Cash", "UPI", "Cheque" - copied from source for easier filtering
@@ -84,7 +91,7 @@ const financeLedgerSchema = new mongoose.Schema(
             default: "active",
         },
 
-        penaltyAmount: { type: Number, } ,
+        penaltyAmount: { type: Number, },
 
 
         // If cancelled, why?
@@ -122,7 +129,7 @@ const financeLedgerSchema = new mongoose.Schema(
 financeLedgerSchema.index({
     schoolId: 1,
     academicYear: 1,
-    
+
 });
 
 export const FinanceLedgerModel = mongoose.model("FinanceLedgerModel", financeLedgerSchema);
