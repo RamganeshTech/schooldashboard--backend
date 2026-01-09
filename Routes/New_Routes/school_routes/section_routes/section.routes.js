@@ -8,7 +8,7 @@ const sectionRoutes = express.Router();
 
 sectionRoutes.get(
   "/getall", 
-  multiRoleAuth("correspondent", "teacher", "principal", "administrator", "viceprincipal"), 
+  multiRoleAuth("correspondent", "teacher", "principal", "administrator", "viceprincipal", "accountant"), 
   getSections
 );
 

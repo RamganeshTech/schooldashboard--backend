@@ -12,7 +12,7 @@ const classRoutes = express.Router();
 // READ: Teachers and Admins can view classes
 classRoutes.get(
     "/getall/:schoolId",
-    multiRoleAuth("correspondent", "teacher", "principal", "administrator", "viceprincipal"),
+    multiRoleAuth("correspondent", "teacher", "principal", "administrator", "viceprincipal", "accountant"),
     getClasses
 );
 

@@ -16,7 +16,7 @@ schoolRoutes.get('/getall',
     getAllSchools);
 
 schoolRoutes.get('/getsingle/:id',
-     multiRoleAuth("correspondent","teacher", "principal", "administrator", "viceprincipal",),
+     multiRoleAuth("correspondent","teacher", "principal", "administrator", "viceprincipal", "accountant"),
     getSchoolById);
 
 schoolRoutes.put('/update/:id',
