@@ -109,6 +109,7 @@ export const getAllTransactions = async (req, res) => {
         const [transactions, totalDocs] = await Promise.all([
             FinanceLedgerModel.find(query)
                 .populate("studentRecordId", "studentId className sectionId classId sectionName _id")
+                .populate("referenceId")
                 .populate("createdBy", "userName role _id")
                 .sort({ date: -1, createdAt: -1 })
                 .skip(skip)
@@ -116,7 +117,7 @@ export const getAllTransactions = async (req, res) => {
             FinanceLedgerModel.countDocuments(query)
         ]);
 
-       
+
 
         res.status(200).json({
             ok: true,
@@ -149,6 +150,7 @@ export const getTransactionById = async (req, res) => {
 
         const transaction = await FinanceLedgerModel.findById(id)
             .populate("studentRecordId", "studentId className sectionName _id")
+            .populate("referenceId")
             .populate("feeReceiptId")
             .populate("createdBy", "userName role _id")
             .populate("cancelledBy", "userName role _id");
