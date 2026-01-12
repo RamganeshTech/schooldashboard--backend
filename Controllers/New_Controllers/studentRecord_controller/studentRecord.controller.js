@@ -552,7 +552,7 @@ export const collectFeeAndManageRecord = async (req, res) => {
         session.endSession();
 
 
-        console.log("get the things first",)
+        // console.log("get the things first",)
         return res.status(200).json({
             ok: true,
             message: "Transaction Successful",
@@ -1133,7 +1133,7 @@ export const uploadConcessionProof = async (req, res) => {
         const { schoolId, studentRecordId } = req.body;
         const file = req.file;
 
-        console.log("gettin cale proof", schoolId, studentRecordId, file)
+        // console.log("gettin cale proof", schoolId, studentRecordId, file)
 
         if (!schoolId || !studentRecordId || !file) {
             return res.status(400).json({ ok: false, message: "Missing file or IDs (schoolId, studentRecordId)" });
@@ -1322,7 +1322,6 @@ export const getStudentRecordById = async (req, res) => {
         // If year provided, use it. If not, use School's Current Year.
         // let targetYear = null;
 
-        console.log("Get Student Record Error:");
 
 
         const schoolDoc = await SchoolModel.findById(schoolId);

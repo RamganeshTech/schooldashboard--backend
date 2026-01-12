@@ -10,7 +10,7 @@ userRoutes.post('/create', createUser);
 userRoutes.post('/login', loginUser);
 userRoutes.post('/logout', logoutUser);
 userRoutes.get('/isauthenticated',
-    multiRoleAuth("correspondent", "teacher", "principal", "administrator", "viceprincipal"),
+    multiRoleAuth("correspondent", "teacher", "principal", "parent", "accountant", "administrator", "viceprincipal"),
     isAuthenticated);
 
 userRoutes.delete("/delete/:id",
@@ -18,7 +18,7 @@ userRoutes.delete("/delete/:id",
     deleteUser);
 
 userRoutes.put("/update/:id",
-    multiRoleAuth("correspondent", "teacher", "principal", "administrator", "viceprincipal"),
+    multiRoleAuth("correspondent", "teacher", "principal", "parent", "accountant", "administrator", "viceprincipal"),
     updateUser);
 
 
@@ -27,7 +27,7 @@ userRoutes.put("/update/:id",
 //  new route (in role  if you send the all in the role params , then youll get all the users irrespective of role)
 userRoutes.get(
     "/:role/:schoolId",
-    multiRoleAuth("correspondent", "teacher", "principal", "administrator", "viceprincipal"),
+    multiRoleAuth("correspondent", "teacher", "principal", "parent", "accountant", "administrator", "viceprincipal"),
     getUsersBySchool
 );
 
