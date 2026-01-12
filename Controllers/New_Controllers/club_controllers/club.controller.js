@@ -390,3 +390,71 @@ export const removeStudentFromClub = async (req, res) => {
         res.status(500).json({ ok: false, message: "Error removing student", error: error.message });
     }
 };
+
+
+
+
+export const toggleClassStudentsToClub = async (req, res) => {
+    const { clubId, classId } = req.body;
+
+    try {
+        // 1. Get all students in that class and the club data in parallel
+        const [studentsInClass, targetClub] = await Promise.all([
+            StudentNewModel.find({ classId }).select('_id'),
+            ClubMainModel.findById(clubId).select('studentId')
+        ]);
+
+        if (!studentsInClass.length) {
+            return res.status(404).json({ ok: false, message: "No students found in this class" });
+        }
+        if (!targetClub) {
+            return res.status(404).json({ ok: false, message: "Club record not found" });
+        }
+
+        const classStudentIds = studentsInClass.map(s => s._id.toString());
+        
+        // 2. INTERNAL TOGGLE LOGIC: 
+        // If the first student of the class is already in the club, we assume "Remove" mode.
+        // Otherwise, we assume "Add" mode.
+        const isAlreadyAdded = targetClub.studentId.some(id => 
+            classStudentIds.includes(id.toString())
+        );
+
+        const type = isAlreadyAdded ? 'remove' : 'add';
+
+        // 3. Prepare Bulk Operations
+        const studentQuery = { _id: { $in: classStudentIds } };
+        const studentUpdate = type === 'add' 
+            ? { $addToSet: { clubs: clubId } } 
+            : { $pull: { clubs: clubId } };
+
+        const clubUpdate = type === 'add'
+            ? { $addToSet: { studentId: { $each: classStudentIds } } }
+            : { $pull: { studentId: { $in: classStudentIds } } };
+
+        // 4. Execute Updates in parallel
+        await Promise.all([
+            StudentNewModel.updateMany(studentQuery, studentUpdate),
+            ClubMainModel.findByIdAndUpdate(clubId, clubUpdate)
+        ]);
+
+        // 5. Audit Logging
+        await createAuditLog(req, {
+            action: "edit",
+            module: "club",
+            targetId: clubId,
+            description: `Bulk ${type} toggle for class ${classId}: ${classStudentIds.length} students affected.`,
+            status: "success"
+        });
+
+        res.status(200).json({
+            ok: true,
+            message: `Successfully ${type === 'add' ? 'enrolled' : 'removed'} class students`,
+            mode: type,
+            count: classStudentIds.length
+        });
+
+    } catch (error) {
+        res.status(500).json({ ok: false, message: "Server Error", error: error.message });
+    }
+};
