@@ -323,7 +323,7 @@ export const addStudentToClub = async (req, res) => {
 
         res.status(200).json({
             message: "Student added to club successfully", ok: true, data: {
-                studnet: studentUpdate, club: clubUpdate
+                student: studentUpdate, club: clubUpdate
             }
         });
     } catch (error) {
@@ -363,7 +363,7 @@ export const removeStudentFromClub = async (req, res) => {
 
         res.status(200).json({
             ok: true, message: "Student removed from club successfully", data: {
-                studnet: studentUpdate, club: clubUpdate
+                student: studentUpdate, club: clubUpdate
             }
         });
     } catch (error) {
