@@ -321,6 +321,14 @@ export const addStudentToClub = async (req, res) => {
             return res.status(404).json({ message: "Student or Club not found" });
         }
 
+        await createAuditLog(req, {
+            action: "edit",
+            module: "club",
+            targetId: clubUpdate._id,
+            description: `Student (${studentId}) added to club  (${updatedClub._id})`,
+            status: "success"
+        });
+
         res.status(200).json({
             message: "Student added to club successfully", ok: true, data: {
                 student: studentUpdate, club: clubUpdate
@@ -359,6 +367,15 @@ export const removeStudentFromClub = async (req, res) => {
                 ok: false, message: "Club record not found",
             });
         }
+
+        await createAuditLog(req, {
+            action: "edit",
+            module: "club",
+            targetId: clubUpdate._id,
+            description: `Student {${studentId}} removed to club  (${updatedClub._id})`,
+            status: "success"
+        });
+
 
 
         res.status(200).json({

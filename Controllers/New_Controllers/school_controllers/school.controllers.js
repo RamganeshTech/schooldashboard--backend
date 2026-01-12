@@ -408,3 +408,77 @@ export const deleteSchool = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error", error: error.message, ok: false });
   }
 };
+
+
+
+
+//  SOCIAL MEDIA HANDLES
+
+export const updateSocialPlatform = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { socialPlatform, link } = req.body;
+
+
+    const updates = {};
+
+    const platforms = ["instagram", "facebook", "linkedin", "youtube"]
+
+    if (!platforms.includes(socialPlatform)) {
+      return res.status(400).json({ message: `playform should contain only these values ${platforms.join(", ")} `, ok: false });
+    }
+
+
+    // if (link) updates.link = link.trim();
+
+
+    const updatePath = `socialPlatform.${socialPlatform}`;
+    const updatedSchool = await SchoolModel.findByIdAndUpdate(id,
+      { [updatePath]: link },
+      {
+        new: true,
+        runValidators: true,
+      });
+
+    if (!updatedSchool) {
+      return res.status(404).json({ message: "School not found", ok: false });
+    }
+
+    await createAuditLog(req, {
+      action: "edit",
+      module: "school",
+      targetId: updatedSchool?._id,
+      description: `school updated (${updatedSchool._id})`,
+      status: "success"
+    });
+
+    return res.status(200).json({
+      ok: true,
+      message: "School platform updated successfully",
+      data: updatedSchool,
+    });
+  } catch (error) {
+    console.error("Error updating school social plotform:", error);
+    return res.status(500).json({ message: "Internal Server Error", error: error.message, ok: false });
+  }
+};
+
+
+
+
+export const getSchoolSocialPlatforms = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const school = await SchoolModel.findById(id).select("socialPlatform name")
+
+    if (!school) {
+      return res.status(404).json({ message: "School not found.", ok: false });
+    }
+
+    return res.status(200).json({ ok: true, data: school });
+  } catch (error) {
+    console.error("Error fetching school social platforms:", error);
+    return res.status(500).json({ message: "Internal Server Error", error: error.message, ok: false });
+  }
+};

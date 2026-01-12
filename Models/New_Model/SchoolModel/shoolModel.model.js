@@ -55,10 +55,16 @@ const schoolSchema = new Schema(
         },
 
         subscription: {
-            type: subscriptionSchema, default:{},
+            type: subscriptionSchema, default: {},
         },
 
-        isActive: { type: Boolean, default: true }
+        isActive: { type: Boolean, default: true },
+        socialPlatform: {
+            facebook: { type: String, default: null },
+            linkedin: { type: String, default: null },
+            instagram: { type: String, default: null },
+            youtube: { type: String, default: null },
+        }
     },
     { timestamps: true }
 );
@@ -113,7 +119,7 @@ schoolSchema.pre("save", async function (next) {
 });
 
 
-schoolSchema.index({ schoolCode: 1});
+schoolSchema.index({ schoolCode: 1 });
 
 
 const SchoolModel = model("SchoolModel", schoolSchema);

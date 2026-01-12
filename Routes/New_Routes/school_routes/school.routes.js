@@ -1,6 +1,6 @@
 import express from 'express'
 // import { upload } from '../Utils/s3upload'
-import { createSchool, deleteSchool, getAllSchools, getSchoolById, updateSchool, updateSchoolLogo } from '../../../Controllers/New_Controllers/school_controllers/school.controllers.js';
+import { createSchool, deleteSchool, getAllSchools, getSchoolById, getSchoolSocialPlatforms, updateSchool, updateSchoolLogo, updateSocialPlatform } from '../../../Controllers/New_Controllers/school_controllers/school.controllers.js';
 // import { upload } from '../../../Utils/s3upload.js';
 import { multiRoleAuth } from '../../../Middleware/multiRoleRequest.js';
 import { upload } from '../../../Utils/s4UploadsNew.js';
@@ -16,7 +16,7 @@ schoolRoutes.get('/getall',
     getAllSchools);
 
 schoolRoutes.get('/getsingle/:id',
-     multiRoleAuth("correspondent","teacher", "principal", "administrator", "viceprincipal", "accountant"),
+    multiRoleAuth("correspondent", "teacher", "principal", "administrator", "viceprincipal", "accountant"),
     getSchoolById);
 
 schoolRoutes.put('/update/:id',
@@ -25,12 +25,28 @@ schoolRoutes.put('/update/:id',
 
 schoolRoutes.put('/updatelogo/:id',
     multiRoleAuth("correspondent"),
-    upload.single('file'), 
+    upload.single('file'),
     updateSchoolLogo);
 
 schoolRoutes.delete('/delete/:id',
     multiRoleAuth("correspondent"),
     deleteSchool);
+
+
+
+
+
+schoolRoutes.put('/update/socialplatform/:id',
+    multiRoleAuth("correspondent", "administrator"),
+    updateSocialPlatform);
+
+
+
+schoolRoutes.get('/getschool/socialplatform/:id',
+    multiRoleAuth("correspondent", "teacher", "parent", "principal", "administrator", "viceprincipal", "accountant"),
+    getSchoolSocialPlatforms);
+
+
 
 
 
