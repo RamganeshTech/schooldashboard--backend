@@ -393,19 +393,24 @@ export const removeStudentFromClub = async (req, res) => {
 
 
 
-
 export const toggleClassStudentsToClub = async (req, res) => {
+    // Frontend sends classId, which maps to currentClassId in the student model
     const { clubId, classId } = req.body;
 
     try {
-        // 1. Get all students in that class and the club data in parallel
+        if (!clubId || !classId) {
+            return res.status(400).json({ ok: false, message: "clubId and classId are required" });
+        }
+
+        // 1. Parallel Fetch: Get students in that class and the target club's current member list
         const [studentsInClass, targetClub] = await Promise.all([
-            StudentNewModel.find({ classId }).select('_id'),
+            StudentNewModel.find({ currentClassId: classId }).select('_id'),
             ClubMainModel.findById(clubId).select('studentId')
         ]);
 
+        // Validation
         if (!studentsInClass.length) {
-            return res.status(404).json({ ok: false, message: "No students found in this class" });
+            return res.status(404).json({ ok: false, message: "No students found in the specified class" });
         }
         if (!targetClub) {
             return res.status(404).json({ ok: false, message: "Club record not found" });
@@ -413,48 +418,50 @@ export const toggleClassStudentsToClub = async (req, res) => {
 
         const classStudentIds = studentsInClass.map(s => s._id.toString());
         
-        // 2. INTERNAL TOGGLE LOGIC: 
-        // If the first student of the class is already in the club, we assume "Remove" mode.
-        // Otherwise, we assume "Add" mode.
+        // 2. INTERNAL TOGGLE LOGIC:
+        // We check if any student from this class is currently in the club's studentId array.
         const isAlreadyAdded = targetClub.studentId.some(id => 
             classStudentIds.includes(id.toString())
         );
 
+        // Determine action: If found, we remove all; if not, we add all.
         const type = isAlreadyAdded ? 'remove' : 'add';
 
-        // 3. Prepare Bulk Operations
-        const studentQuery = { _id: { $in: classStudentIds } };
+        // 3. Define MongoDB operators
+        // For Students: update their 'clubs' array
         const studentUpdate = type === 'add' 
             ? { $addToSet: { clubs: clubId } } 
             : { $pull: { clubs: clubId } };
 
+        // For Club: update the 'studentId' array
         const clubUpdate = type === 'add'
             ? { $addToSet: { studentId: { $each: classStudentIds } } }
             : { $pull: { studentId: { $in: classStudentIds } } };
 
-        // 4. Execute Updates in parallel
+        // 4. Bulk Execute Updates
+        // Using Promise.all to keep DB hits to a minimum and speed up execution
         await Promise.all([
-            StudentNewModel.updateMany(studentQuery, studentUpdate),
+            StudentNewModel.updateMany({ _id: { $in: classStudentIds } }, studentUpdate),
             ClubMainModel.findByIdAndUpdate(clubId, clubUpdate)
         ]);
 
-        // 5. Audit Logging
+        // 5. Audit Log
         await createAuditLog(req, {
             action: "edit",
             module: "club",
             targetId: clubId,
-            description: `Bulk ${type} toggle for class ${classId}: ${classStudentIds.length} students affected.`,
+            description: `Bulk ${type} toggle: Class (${classId}) had ${classStudentIds.length} students ${type === 'add' ? 'added to' : 'removed from'} club.`,
             status: "success"
         });
 
         res.status(200).json({
             ok: true,
-            message: `Successfully ${type === 'add' ? 'enrolled' : 'removed'} class students`,
+            message: `Successfully ${type === 'add' ? 'added' : 'removed'} ${classStudentIds.length} students.`,
             mode: type,
             count: classStudentIds.length
         });
 
     } catch (error) {
-        res.status(500).json({ ok: false, message: "Server Error", error: error.message });
+        res.status(500).json({ ok: false, message: "Error toggling class to club", error: error.message });
     }
 };
