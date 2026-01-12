@@ -11,6 +11,7 @@ const uploadSchema = new Schema({
 
 const clubSchema = new Schema({
     schoolId: { type: mongoose.Schema.Types.ObjectId, ref: "SchoolModel", default: null },
+    classId: { type: mongoose.Schema.Types.ObjectId, ref: "ClassModel", default: null },
 
     name: {
         type: String

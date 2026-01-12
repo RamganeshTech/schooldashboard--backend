@@ -227,7 +227,7 @@ export const updateStudent = async (req, res) => {
         const parentMobile = updates.mandatory?.mobileNumber;
 
         if (parentMobile) {
-            console.log("5555555555")
+            // console.log("5555555555")
             // We use findOneAndUpdate with $addToSet
             // $addToSet: Adds the ID only if it does NOT already exist in the array.
             const updatedParent = await UserModel.findOneAndUpdate(
@@ -241,7 +241,7 @@ export const updateStudent = async (req, res) => {
                 { new: true } // Returns the updated document (optional, for logging)
             );
 
-            console.log("66666666666", updatedParent)
+            // console.log("66666666666", updatedParent)
 
 
             if (updatedParent) {

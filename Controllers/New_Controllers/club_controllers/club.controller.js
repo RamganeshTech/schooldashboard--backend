@@ -28,7 +28,7 @@ export const formatUploadData = async (file) => {
 // ==========================================
 export const createClub = async (req, res) => {
     try {
-        const { name, description, schoolId } = req.body;
+        const { name, description, schoolId, classId } = req.body;
 
         const file = req.file
         // Check if club name already exists for this school
@@ -46,6 +46,7 @@ export const createClub = async (req, res) => {
 
         const newClub = new ClubMainModel({
             schoolId,
+            classId: classId || null,
             name,
             description,
             thumbnail: thumbnailData, // Can be null if no file uploaded
@@ -80,7 +81,7 @@ export const createClub = async (req, res) => {
 // ==========================================
 export const getAllClubs = async (req, res) => {
     try {
-        const { schoolId } = req.query;
+        const { schoolId , classId} = req.query;
 
         // 1. Pagination Setup
         const page = parseInt(req.query.page) || 1;
@@ -90,6 +91,7 @@ export const getAllClubs = async (req, res) => {
         // 2. Build Query
         const query = {};
         if (schoolId) query.schoolId = schoolId;
+        if (classId) query.classId = classId;
 
         // Optional: Filter active clubs only
         // if (req.user?.role === 'student') query.isActive = true;
@@ -130,7 +132,7 @@ export const getAllClubs = async (req, res) => {
 export const getClubById = async (req, res) => {
     try {
         const { id } = req.params;
-        const club = await ClubMainModel.findById(id).populate("studentId", "")
+        const club = await ClubMainModel.findById(id).populate("studentId classId" )
 
         if (!club) {
             return res.status(404).json({ ok: false, message: "Club not found" });
@@ -149,7 +151,7 @@ export const getClubById = async (req, res) => {
 export const updateClubText = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, description, isActive } = req.body;
+        const { name, description, isActive, classId } = req.body;
 
         // We explicitly ONLY update text fields here. 
         // We ignore any file uploads sent to this endpoint.
@@ -158,6 +160,7 @@ export const updateClubText = async (req, res) => {
             {
                 $set: {
                     name,
+                    classId: classId || null,
                     description,
                     isActive
                 }
