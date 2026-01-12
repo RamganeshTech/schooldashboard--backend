@@ -28,6 +28,8 @@ const StudentNewSchema = mongoose.Schema({
 
     isActive: { type: Boolean, default: true },
 
+    clubs: [{ type: mongoose.Schema.Types.ObjectId, ref: "ClubMainModel" }],
+
     // === MANDATORY DETAILS (Parents, Aadhar, Address) ===
     mandatory: {
         gender: { type: String, default: null },

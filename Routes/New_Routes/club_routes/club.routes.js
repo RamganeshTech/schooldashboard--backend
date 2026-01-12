@@ -1,5 +1,5 @@
 import express from 'express';
-import { createClub, deleteClub, getAllClubs, getClubById, updateClubText, updateClubThumbnail } from '../../../Controllers/New_Controllers/club_controllers/club.controller.js';
+import { addStudentToClub, createClub, deleteClub, getAllClubs, getClubById, removeStudentFromClub, updateClubText, updateClubThumbnail } from '../../../Controllers/New_Controllers/club_controllers/club.controller.js';
 import { createClubVideo, deleteClubVideo, getAllClubVideos, getClubVideoById, updateClubVideoDetails, updateClubVideoFile } from '../../../Controllers/New_Controllers/club_controllers/clubVideo.controller.js';
 import { upload } from '../../../Utils/s4UploadsNew.js';
 import { multiRoleAuth } from '../../../Middleware/multiRoleRequest.js';
@@ -61,6 +61,25 @@ clubRoutes.delete('/delete/:id',
     featureGuard("club"),
     
     deleteClub);
+
+
+
+    
+// Delete Club (and cascades to delete videos)
+clubRoutes.put('/addtoclub',  
+    multiRoleAuth("correspondent", "administrator", ),
+    featureGuard("club"),
+    
+    addStudentToClub);
+
+
+    
+// Delete Club (and cascades to delete videos)
+clubRoutes.put('/removefromclub',  
+    multiRoleAuth("correspondent", "administrator"),
+    featureGuard("club"),
+    
+    removeStudentFromClub);
 
 
 

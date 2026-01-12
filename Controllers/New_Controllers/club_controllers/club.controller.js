@@ -1,6 +1,7 @@
 // import { ClubMainModel, ClubVideoModel } from "../models/yourModelFile.js"; // Update path
 
 import { ClubMainModel, ClubVideoModel } from "../../../Models/New_Model/club_model/club.model.js";
+import StudentNewModel from "../../../Models/New_Model/StudentModel/studentNew.model.js";
 import { uploadFileToS3New } from "../../../Utils/s4UploadsNew.js";
 import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 import { archiveData } from "../deleteArchieve_controller/deleteArchieve.controller.js";
@@ -54,7 +55,7 @@ export const createClub = async (req, res) => {
         await newClub.save();
 
 
-         await createAuditLog(req, {
+        await createAuditLog(req, {
             action: "create",
             module: "club",
             targetId: newClub._id,
@@ -129,7 +130,7 @@ export const getAllClubs = async (req, res) => {
 export const getClubById = async (req, res) => {
     try {
         const { id } = req.params;
-        const club = await ClubMainModel.findById(id);
+        const club = await ClubMainModel.findById(id).populate("studentId", "")
 
         if (!club) {
             return res.status(404).json({ ok: false, message: "Club not found" });
@@ -213,7 +214,7 @@ export const updateClubThumbnail = async (req, res) => {
             return res.status(404).json({ ok: false, message: "Club not found" });
         }
 
-        
+
         await createAuditLog(req, {
             action: "edit",
             module: "club",
@@ -280,5 +281,92 @@ export const deleteClub = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({ ok: false, message: "Error deleting club" });
+    }
+};
+
+
+
+//  ADD STUDNET TO THE CLUBS
+
+// --- ADD STUDENT TO CLUB ---
+export const addStudentToClub = async (req, res) => {
+    const { studentId, clubId } = req.body;
+
+    try {
+        // 1. Add Club ID to the Student's "clubs" array
+        const studentUpdate = await StudentNewModel.findByIdAndUpdate(
+            studentId,
+            { $addToSet: { clubs: clubId } },
+            { new: true }
+        );
+
+
+        if (!studentUpdate) {
+            return res.status(404).json({ ok: false, message: "Student record not found" });
+        }
+
+
+        // 2. Add Student ID to the Club's "studentId" array
+        const clubUpdate = await ClubMainModel.findByIdAndUpdate(
+            clubId,
+            { $addToSet: { studentId: studentId } },
+            { new: true }
+        );
+
+        if (!clubUpdate) {
+            return res.status(404).json({ ok: false, message: "Club record not found" });
+        }
+
+        if (!studentUpdate || !clubUpdate) {
+            return res.status(404).json({ message: "Student or Club not found" });
+        }
+
+        res.status(200).json({
+            message: "Student added to club successfully", ok: true, data: {
+                studnet: studentUpdate, club: clubUpdate
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ ok: false, message: "Error adding student to club", error: error.message });
+    }
+};
+
+// --- REMOVE STUDENT FROM CLUB ---
+export const removeStudentFromClub = async (req, res) => {
+    const { studentId, clubId } = req.body;
+
+    try {
+        // 1. Remove Club ID from Student
+        const studentUpdate = await StudentNewModel.findByIdAndUpdate(
+            studentId,
+            { $pull: { clubs: clubId } }
+        );
+
+        if (!studentUpdate) {
+            return res.status(404).json({ ok: false, message: "Student record not found" });
+        }
+
+
+
+        // 2. Remove Student ID from Club
+        const clubUpdate = await ClubMainModel.findByIdAndUpdate(
+            clubId,
+            { $pull: { studentId: studentId } }
+        );
+
+        if (!clubUpdate) {
+            return res.status(404).json({
+                ok: false, message: "Club record not found",
+            });
+        }
+
+
+        res.status(200).json({
+            ok: true, message: "Student removed from club successfully", data: {
+                studnet: studentUpdate, club: clubUpdate
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ ok: false, message: "Error removing student", error: error.message });
     }
 };

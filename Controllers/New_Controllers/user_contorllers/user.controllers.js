@@ -285,7 +285,7 @@ export const loginUser = async (req, res) => {
         isPlatformAdmin: user.isPlatformAdmin || false,
         studentId: user?.studentId || [],
         assignments: user?.assignments || [],
-        schoolId: user?.schoolId
+        schoolId: user?.schoolId,
       }
     });
 
@@ -339,7 +339,7 @@ export const isAuthenticated = async (req, res) => {
       isPlatformAdmin: isExist?.isPlatformAdmin || false,
       studentId: user?.studentId || [],
       assignments: user?.assignments || [],
-      schoolId: user?.schoolId || null
+      schoolId: user?.schoolId || null,
     };
 
 

@@ -18,6 +18,7 @@ const clubSchema = new Schema({
     description: {
         type: String,
     },
+    studentId: [{ type: mongoose.Schema.Types.ObjectId, ref: "StudentNewModel" }],
     // REPLACED: thumbnailUrl string
     // WITH: Your uploadSchema structure
     thumbnail: {
