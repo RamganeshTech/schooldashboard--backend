@@ -404,7 +404,7 @@ export const toggleClassStudentsToClub = async (req, res) => {
 
         // 1. Parallel Fetch: Get students in that class and the target club's current member list
         const [studentsInClass, targetClub] = await Promise.all([
-            StudentNewModel.find({ currentClassId: classId }).select('_id'),
+            StudentNewModel.find({ currentClassId: classId }).select('_id studentName srId'),
             ClubMainModel.findById(clubId).select('studentId')
         ]);
 
@@ -458,6 +458,7 @@ export const toggleClassStudentsToClub = async (req, res) => {
             ok: true,
             message: `Successfully ${type === 'add' ? 'added' : 'removed'} ${classStudentIds.length} students.`,
             mode: type,
+            data: studentsInClass,
             count: classStudentIds.length
         });
 
