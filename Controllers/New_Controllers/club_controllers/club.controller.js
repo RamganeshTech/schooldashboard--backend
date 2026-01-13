@@ -328,7 +328,7 @@ export const addStudentToClub = async (req, res) => {
             action: "edit",
             module: "club",
             targetId: clubUpdate._id,
-            description: `Student (${studentId}) added to club  (${updatedClub._id})`,
+            description: `Student (${studentId}) added to club  (${clubUpdate._id})`,
             status: "success"
         });
 
@@ -375,7 +375,7 @@ export const removeStudentFromClub = async (req, res) => {
             action: "edit",
             module: "club",
             targetId: clubUpdate._id,
-            description: `Student {${studentId}} removed to club  (${updatedClub._id})`,
+            description: `Student {${studentId}} removed to club  (${clubUpdate._id})`,
             status: "success"
         });
 
