@@ -45,7 +45,7 @@ attendanceRoutes.get(
 attendanceRoutes.get(
   "/student/:studentId",
   // Add your auth middleware here (ensure user is parent of this student)
-  multiRoleAuth("administrator", "correspondent", "principal", "viceprincipal", "teacher", "parent"),
+  multiRoleAuth("administrator", "accountant", "correspondent", "principal", "viceprincipal", "teacher", "parent"),
   featureGuard("attendance"),
   getStudentAttendanceHistory
 );

@@ -6,11 +6,11 @@ import { createAuditLog } from "../audit_controllers/audit.controllers.js";
 
 
 const getMidnightDate = (dateString) => {
-    if(!dateString) return new Date();
-    
+    if (!dateString) return new Date();
+
     // Split "2025-12-20" into parts
     const parts = dateString.split('-'); // ["2025", "12", "20"]
-    
+
     if (parts.length !== 3) {
         throw new Error("Invalid Date Format. Use YYYY-MM-DD");
     }
@@ -113,7 +113,7 @@ export const getAttendanceSheet = async (req, res) => {
 // 2. MARK OR UPDATE ATTENDANCE (Upsert Logic)
 // ==========================================================
 export const markAttendance = async (req, res) => {
-   
+
     try {
         const {
             schoolId,
@@ -197,16 +197,16 @@ export const markAttendance = async (req, res) => {
             });
         }
 
-          await createAuditLog(req, {
-                    action: "create",
-                    module: "attendance",
-                    targetId: attendanceDoc._id,
-                    description: `attendance marked (${attendanceDoc._id})`,
-                    status: "success"
-                });
-        
+        await createAuditLog(req, {
+            action: "create",
+            module: "attendance",
+            targetId: attendanceDoc._id,
+            description: `attendance marked (${attendanceDoc._id})`,
+            status: "success"
+        });
 
-       
+
+
 
         return res.status(200).json({
             ok: true,
@@ -215,7 +215,7 @@ export const markAttendance = async (req, res) => {
         });
 
     } catch (error) {
-       
+
         console.error("Mark Attendance Error:", error);
         return res.status(500).json({ ok: false, message: error.message });
     }
@@ -224,15 +224,15 @@ export const markAttendance = async (req, res) => {
 
 export const getClassAttendanceHistory = async (req, res) => {
     try {
-        const { 
-            schoolId, 
-            classId, 
-            sectionId, 
+        const {
+            schoolId,
+            classId,
+            sectionId,
             academicYear,
-            page = 1, 
+            page = 1,
             limit = 10,
             startDate, // Optional: Filter by date range
-            endDate 
+            endDate
         } = req.query;
 
         if (!schoolId || !classId) {
@@ -311,17 +311,17 @@ export const getStudentAttendanceHistory = async (req, res) => {
 
         // 1. Build the Date Filter
         let dateFilter = {};
-        
+
         if (month && year) {
             // *** CHANGE: USE Date.UTC TO MATCH YOUR STORAGE LOGIC ***
-            
+
             // Start: 1st day of month at 00:00:00 UTC
             const startDate = new Date(Date.UTC(year, Number(month) - 1, 1));
-            
+
             // End: Last day of month at 23:59:59.999 UTC
             // (Day 0 of next month gives the last day of current month)
             const endDate = new Date(Date.UTC(year, Number(month), 0, 23, 59, 59, 999));
-            
+
             dateFilter = {
                 date: { $gte: startDate, $lte: endDate }
             };
@@ -336,13 +336,13 @@ export const getStudentAttendanceHistory = async (req, res) => {
         // 3. Fetch Data
         // records.$ matches ONLY the array element for this specific student
         const attendanceList = await AttendanceModel.find(query)
-            .select("date records.$") 
-            .sort({ date: 1 });       
+            .select("date records.$")
+            .sort({ date: 1 });
 
         // 4. Format Data for Parent App
         const formattedData = attendanceList.map(doc => {
             // Since we used records.$, the array will strictly have length 1
-            const record = doc.records[0]; 
+            const record = doc.records[0];
 
             return {
                 attendanceId: doc._id,
@@ -360,6 +360,15 @@ export const getStudentAttendanceHistory = async (req, res) => {
             late: formattedData.filter(d => d.status.toLowerCase() === 'late').length,
             halfDay: formattedData.filter(d => d.status.toLowerCase() === 'half-day').length,
         };
+
+        // Calculate Percentages (Safety check: avoid division by zero)
+        summary.presentPercentage = totalDays > 0
+            ? parseFloat(((summary.present / totalDays) * 100).toFixed(2))
+            : 0;
+
+        summary.absentPercentage = totalDays > 0
+            ? parseFloat(((summary.absent / totalDays) * 100).toFixed(2))
+            : 0;
 
         return res.status(200).json({
             ok: true,
