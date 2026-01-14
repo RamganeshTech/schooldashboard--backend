@@ -361,13 +361,14 @@ export const getStudentAttendanceHistory = async (req, res) => {
             halfDay: formattedData.filter(d => d.status.toLowerCase() === 'half-day').length,
         };
 
-        // Calculate Percentages (Safety check: avoid division by zero)
-        summary.presentPercentage = totalDays > 0
-            ? parseFloat(((summary.present / totalDays) * 100).toFixed(2))
+            // Adding Percentages AFTER the summary object is created
+        // Note: We use summary.totalDays instead of totalDays
+        summary.presentPercentage = summary.totalDays > 0
+            ? parseFloat(((summary.present / summary.totalDays) * 100).toFixed(2))
             : 0;
 
-        summary.absentPercentage = totalDays > 0
-            ? parseFloat(((summary.absent / totalDays) * 100).toFixed(2))
+        summary.absentPercentage = summary.totalDays > 0
+            ? parseFloat(((summary.absent / summary.totalDays) * 100).toFixed(2))
             : 0;
 
         return res.status(200).json({
@@ -378,6 +379,6 @@ export const getStudentAttendanceHistory = async (req, res) => {
 
     } catch (error) {
         console.error("Get Student Attendance Error:", error);
-        return res.status(500).json({ ok: false, message: "Internal server error" });
+        return res.status(500).json({ ok: false, message: "Internal server error", error:error?.message });
     }
 };
