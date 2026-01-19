@@ -133,6 +133,29 @@ export const getFeeStructureByClass = async (req, res) => {
 
 
 
+export const getFeeStructure = async (req, res) => {
+  try {
+    const { schoolId } = req.query;
+
+    if (!schoolId) {
+      return res.status(400).json({ ok: false, message: "schoolId are required" });
+    }
+
+    const feeStructure = await FeeStructureModel.find({ schoolId });
+
+    
+    return res.status(200).json({
+      ok: true,
+      message: "fetchedd fee structure for all class",
+      data: feeStructure
+    });
+
+  } catch (error) {
+    console.error("Get Fee Error:", error);
+    return res.status(500).json({ ok: false, message: "Internal server error" , error: error?.message});
+  }
+};
+
 
 
 export const deleteFeeStructure = async (req, res) => {

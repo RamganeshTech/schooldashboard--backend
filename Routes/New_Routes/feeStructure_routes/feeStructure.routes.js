@@ -1,5 +1,5 @@
 import express from "express";
-import { deleteFeeStructure, getFeeStructureByClass, setFeeStructure } from "../../../Controllers/New_Controllers/feeStructure_controller/feeStructure.controller.js";
+import { deleteFeeStructure, getFeeStructure, getFeeStructureByClass, setFeeStructure } from "../../../Controllers/New_Controllers/feeStructure_controller/feeStructure.controller.js";
 import { multiRoleAuth } from "../../../Middleware/multiRoleRequest.js";
 // import { setFeeStructure, getFeeStructureByClass } from "../controllers/feeStructureController.js";
 // import { multiRoleAuth } from "../middlewares/authMiddleware.js";
@@ -34,6 +34,11 @@ feeStructureRoutes.delete(
 );
 
 
+feeStructureRoutes.get(
+  "/getall",
+  multiRoleAuth("correspondent", "administrator", "principal", "accountant", "teacher"), 
+  getFeeStructure
+);
 
 
 export default feeStructureRoutes;
