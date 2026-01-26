@@ -26,7 +26,7 @@ const studentRecordRoutes = express.Router();
 // UPLOAD ROUTE
 studentRecordRoutes.post(
   "/applyconcession",
-  multiRoleAuth("correspondent", "accountant", "principal"),
+  multiRoleAuth("correspondent", "accountant", "principal", "administrator"),
   featureGuard("studentRecord"),
   // "files" is the key name for form-data. 10 is max count.
   upload.single("file"),
@@ -37,7 +37,7 @@ studentRecordRoutes.post(
 
 studentRecordRoutes.put(
   "/updatevalue",
-  multiRoleAuth("correspondent", "accountant", "principal",),
+  multiRoleAuth("correspondent", "accountant", "principal", "administrator"),
   featureGuard("studentRecord"),
   // "files" is the key name for form-data. 10 is max count.
   updateConcessionDetails
@@ -46,9 +46,8 @@ studentRecordRoutes.put(
 //  one fule only allowed, it will take the first file
 studentRecordRoutes.put(
   "/update/proof",
-  multiRoleAuth("correspondent", "accountant", "principal"),
+  multiRoleAuth("correspondent", "accountant", "principal", "administrator"),
   featureGuard("studentRecord"),
-
   upload.single("file"),
   uploadConcessionProof
 );
@@ -92,7 +91,7 @@ studentRecordRoutes.delete(
 
 studentRecordRoutes.patch(
   "/togglestatus/:id",
-  multiRoleAuth("administrator", "correspondent", "accountant"),
+  multiRoleAuth("administrator", "correspondent", "accountant", "administrator"),
   featureGuard("studentRecord"),
 
   toggleStudentRecordStatus
