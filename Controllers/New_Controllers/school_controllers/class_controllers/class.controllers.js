@@ -40,6 +40,13 @@ export const createClass = async (req, res) => {
             return res.status(400).json({ ok: false, message: "schoolId and name are required" });
         }
 
+        if (order && typeof order !== "number") {
+            return res.status(400).json({
+                ok: false,
+                message: "Order must be a number"
+            });
+        }
+
         // 2. Duplicate Check
         // Case-insensitive check (e.g., "Grade 1" vs "grade 1")
         const existing = await ClassModel.findOne({
@@ -52,9 +59,6 @@ export const createClass = async (req, res) => {
         }
 
         // 3. Teacher Validation (If assigning one)
-       
-
-
 
         const newClass = await ClassModel.create({
             schoolId,
@@ -67,7 +71,7 @@ export const createClass = async (req, res) => {
         await createAuditLog(req, {
             action: "create",
             module: "class",
-            targetId: id,
+            targetId: newClass?._id,
             description: `class created (${newClass._id})`,
             status: "success"
         });
@@ -75,7 +79,7 @@ export const createClass = async (req, res) => {
         return res.status(201).json({ ok: true, data: newClass });
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ ok: false, message: "Internal server error" });
+        return res.status(500).json({ ok: false, error: error?.message, message: "Internal server error" });
     }
 };
 
