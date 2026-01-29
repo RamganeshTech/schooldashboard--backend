@@ -88,7 +88,7 @@ export const getAttendanceSheet = async (req, res) => {
 
         // Initialize empty sheet
         const initializedList = students.map(rec => ({
-            studentId: rec.studentId?._id,
+            studentId: rec.studentId?._id,    // This is the _id from StudentNewModel
             studentName: rec.studentId.studentName,
             rollNumber: rec.rollNumber,
             status: "", // Default status

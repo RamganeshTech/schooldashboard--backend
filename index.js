@@ -38,6 +38,8 @@ import clubRoutes from './Routes/New_Routes/club_routes/club.routes.js';
 import auditRoutes from './Routes/New_Routes/audit_routes/audit.routes.js';
 import feeReceiptRoutes from './Routes/New_Routes/feeTrasaction_receipt_routes/feeTrasactionReceipt.routes.js';
 import subscriptionRoutes from './Routes/New_Routes/subscription_routes/subscription.routes.js';
+import timeTableRoutes from './Routes/New_Routes/TimeTable_routes/timeTable.routes.js';
+import HomeWorkRoutes from './Routes/New_Routes/HomeWork_routes/homework.routes.js';
 
 
 dotenv.config({ path: '.env.production' });
@@ -69,6 +71,8 @@ app.use('/api/studentrecord', studentRecordRoutes)
 app.use('/api/attendance', attendanceRoutes)
 app.use('/api/fee/receipt', feeReceiptRoutes)
 
+app.use('/api/timetable', timeTableRoutes)
+app.use('/api/homework', HomeWorkRoutes)
 
 
 app.use('/api/expense', expenseRoutes)
