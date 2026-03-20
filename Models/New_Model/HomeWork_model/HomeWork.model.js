@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 
-const uploadSchema = new Schema({
+export const uploadSchema = new Schema({
     type: { type: String, enum: ["image", "pdf"] },
     key: { type: String, },
     url: { type: String, },

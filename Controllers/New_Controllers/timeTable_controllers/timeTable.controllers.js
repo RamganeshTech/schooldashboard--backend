@@ -223,6 +223,7 @@ export const upsertPeriod = async (req, res) => {
         });
 
         let updated;
+        
         if (existingDoc) {
             // CASE: Update existing period
             updated = await TimeTableModel.findOneAndUpdate(
@@ -236,6 +237,7 @@ export const upsertPeriod = async (req, res) => {
                     new: true 
                 }
             ).populate("weeklySchedule.periods.teacherId", "userName _id");
+
         } else {
             // CASE: Add new period
             updated = await TimeTableModel.findOneAndUpdate(

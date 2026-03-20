@@ -304,7 +304,7 @@ export const deleteExpense = async (req, res) => {
         }
 
         // 2. CALL THE ARCHIVE UTILITY
-        const deletedOne = await archiveData({
+         await archiveData({
             schoolId: deletedExpense.schoolId,
             category: "expense",
             originalId: deletedExpense._id,

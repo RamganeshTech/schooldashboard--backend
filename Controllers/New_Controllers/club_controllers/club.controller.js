@@ -141,7 +141,7 @@ export const getClubById = async (req, res) => {
         res.status(200).json({ ok: true, data: club });
 
     } catch (error) {
-        res.status(500).json({ ok: false, message: "Error fetching club details" });
+        res.status(500).json({ ok: false, message: "Error fetching club details", error: error?.message });
     }
 };
 
@@ -187,7 +187,7 @@ export const updateClubText = async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ ok: false, message: "Error updating club details" });
+        res.status(500).json({ ok: false, message: "Error updating club details", error:error.message });
     }
 };
 
@@ -283,7 +283,7 @@ export const deleteClub = async (req, res) => {
         res.status(200).json({ ok: true, message: "Club and associated videos deleted successfully" });
 
     } catch (error) {
-        res.status(500).json({ ok: false, message: "Error deleting club" });
+        res.status(500).json({ ok: false, message: "Error deleting club" , error:error.message});
     }
 };
 

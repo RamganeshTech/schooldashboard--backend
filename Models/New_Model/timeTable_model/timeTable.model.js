@@ -21,9 +21,9 @@ const timetableSchema = new Schema(
                 periods: [
                     {
                         periodNumber: { type: Number, required: true }, // 1, 2, 3...
-                        startTime: { type: String }, // e.g., "09:00 AM"
-                        endTime: { type: String },   // e.g., "09:45 AM"
-                        subjectName: { type: String, },
+                        startTime: { type: String, default: null }, // e.g., "09:00 AM"
+                        endTime: { type: String, default: null },   // e.g., "09:45 AM"
+                        subjectName: { type: String, default: null },
                         teacherId: { type: Schema.Types.ObjectId, ref: "UserModel", default: null },
                         isBreak: { type: Boolean, default: false }, // For Lunch/Recess
                         roomNumber: { type: String }

@@ -40,6 +40,7 @@ import feeReceiptRoutes from './Routes/New_Routes/feeTrasaction_receipt_routes/f
 import subscriptionRoutes from './Routes/New_Routes/subscription_routes/subscription.routes.js';
 import timeTableRoutes from './Routes/New_Routes/TimeTable_routes/timeTable.routes.js';
 import HomeWorkRoutes from './Routes/New_Routes/HomeWork_routes/homework.routes.js';
+import HomeWorkSubmissionRoutes from './Routes/New_Routes/HomeWork_routes/homeWorkSubmission.route.js';
 
 
 dotenv.config({ path: '.env.production' });
@@ -73,6 +74,7 @@ app.use('/api/fee/receipt', feeReceiptRoutes)
 
 app.use('/api/timetable', timeTableRoutes)
 app.use('/api/homework', HomeWorkRoutes)
+app.use('/api/homework/submission', HomeWorkSubmissionRoutes)
 
 
 app.use('/api/expense', expenseRoutes)
