@@ -1,7 +1,7 @@
 import express from 'express';
 import { multiRoleAuth } from '../../../Middleware/multiRoleRequest.js';
 import { featureGuard } from '../../../Middleware/featureGuard.js';
-import { createClubQuiz, deleteClubQuiz, getAllClubQuizzes, getSingleClubQuiz } from '../../../Controllers/New_Controllers/club_controllers/clubQuiz.controller.js';
+import { createClubQuiz, deleteClubQuiz, getAllClubQuizzes, getSingleClubQuiz, updateClubQuiz } from '../../../Controllers/New_Controllers/club_controllers/clubQuiz.controller.js';
 
 const clubQuizRoutes = express.Router();
 
@@ -10,6 +10,12 @@ clubQuizRoutes.post('/create',
     featureGuard("club"),
     createClubQuiz);
 
+    
+clubQuizRoutes.put('/update/:id',
+    multiRoleAuth("correspondent", "administrator", "teacher"),
+    featureGuard("club"),
+    updateClubQuiz);
+    
 
 clubQuizRoutes.get('/getall',
     multiRoleAuth("correspondent", "principal", "teacher", "parent", "administrator", "accountant", "viceprincipal"),

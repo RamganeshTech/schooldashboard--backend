@@ -16,10 +16,24 @@ export const createQuizAttempt = async (req, res) => {
         let totalScore = 0;
         const gradedAnswers = [];
 
+
+        // Add this right after fetching the 'quiz'
+        if (studentAnswers.length !== quiz.questions.length) {
+            return res.status(400).json({
+                ok: false,
+                message: `Validation Failed: This quiz has ${quiz.questions.length} questions, but you sent ${studentAnswers.length} answers.`
+            });
+        }
+
         // We map through the quiz questions to ensure we grade correctly
         quiz.questions.forEach((question, index) => {
             // Find what the student answered for this specific question ID or Index
             const studentAns = studentAnswers.find(a => a.questionId === question._id.toString() || a.index === index);
+
+            // Double check that the specific answer exists (extra safety)
+            if (!studentAns) {
+                throw new Error(`Missing answer for question at index ${index}`);
+            }
 
             const isCorrect = studentAns && Number(studentAns.selectedOptionIndex) === question.correctOptionIndex;
 

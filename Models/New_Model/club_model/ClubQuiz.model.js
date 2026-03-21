@@ -12,7 +12,7 @@ const questions = new Schema({
 
 const ClubQuizSchema = new Schema({
     schoolId: { type: Schema.Types.ObjectId, ref: "SchoolModel", required: true },
-    clubId: { type: Schema.Types.ObjectId, ref: 'ClubMainModel', },
+    clubId: { type: Schema.Types.ObjectId, ref: 'ClubMainModel', required:true},
     academicYear:{type:String, default: null},
     clubVideoId: { type: Schema.Types.ObjectId, ref: "ClubVideoModel", default: null },
     classId: { type: Schema.Types.ObjectId, ref: "ClassModel", default: null },

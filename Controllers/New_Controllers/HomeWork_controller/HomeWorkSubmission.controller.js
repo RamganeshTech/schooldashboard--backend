@@ -3,7 +3,7 @@ import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model.
 
 export const submitHomeworkStatus = async (req, res) => {
     try {
-        let { homeworkId, subjectId, studentId, studentAttachments, remarks, academicYear, status } = req.body;
+        let { homeworkId, subjectId, studentId, remarks, academicYear, status } = req.body;
 
         // 1. Determine schoolId: Prioritize the authenticated user's schoolId
         const schoolId = req.user.schoolId || req.body.schoolId;
@@ -49,7 +49,7 @@ export const submitHomeworkStatus = async (req, res) => {
                 // Only stamp the date if they are finished
                 ...(cleanStatus === "completed" && { completedAt: new Date() }),
                 remarks,
-                studentAttachments
+                // studentAttachments
             },
             {
                 new: true,

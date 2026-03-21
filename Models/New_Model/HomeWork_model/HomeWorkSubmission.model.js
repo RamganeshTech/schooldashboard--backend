@@ -24,7 +24,7 @@ const homeworkSubmissionSchema = new mongoose.Schema({
     status: { type: String, enum: ["pending", "completed"], default: "completed" },
     completedAt: { type: Date, default: new Date() },
     remarks: { type: String, default: null }, // Teacher's feedback
-    studentAttachments: [uploadSchema] // Proof of work
+    // studentAttachments: [uploadSchema] // Proof of work
 }, { timestamps: true });
 
 // Index for fast lookups

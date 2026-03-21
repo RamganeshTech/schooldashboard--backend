@@ -12,13 +12,17 @@ export const createClubQuiz = async (req, res) => {
             description,
             questions,
             academicYear
-            
+
         } = req.body;
 
         const schoolId = req.body.schoolId || req.user.schoolId;
 
-          if(!schoolId){
+        if (!schoolId) {
             return res.status(400).json({ ok: false, message: "SchoolId is required." });
+        }
+
+        if (!clubId) {
+            return res.status(400).json({ ok: false, message: "clubId is required." });
         }
 
         // 1. Basic Validation
@@ -27,7 +31,7 @@ export const createClubQuiz = async (req, res) => {
         }
 
 
-      
+
 
         // 2. Academic Year Fallback
         if (!academicYear) {
@@ -68,6 +72,66 @@ export const createClubQuiz = async (req, res) => {
             message: "Club Quiz created successfully",
             data: newQuiz
         });
+
+    } catch (error) {
+        res.status(500).json({ ok: false, message: error.message });
+    }
+};
+
+export const updateClubQuiz = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const schoolId = req.user.schoolId;
+
+        if(!id){
+                return res.status(400).json({ ok: false, message: "id is required." });
+        }
+
+        // 1. Create an empty object for the update
+        let updateData = {};
+
+        // 2. Only add fields to updateData if they exist in req.body
+        // Use a whitelist approach for security
+        const allowedFields = [
+            'clubId', 'clubVideoId', 'classId', 'sectionId', 
+            'title', 'description', 'academicYear', 'isActive'
+        ];
+
+        allowedFields.forEach(field => {
+            if (req.body[field] !== undefined) {
+                updateData[field] = req.body[field];
+            }
+        });
+
+        // 3. Special handling for Questions (Recalculate points)
+        if (req.body.questions && Array.isArray(req.body.questions)) {
+            if (req.body.questions.length === 0) {
+                return res.status(400).json({ ok: false, message: "Quiz must have questions." });
+            }
+
+            let calculatedTotalPoints = 0;
+            for (const q of req.body.questions) {
+                if (!q.questionText || !q.options || q.options.length < 2) {
+                    return res.status(400).json({ ok: false, message: "Invalid question structure." });
+                }
+                calculatedTotalPoints += (Number(q.points) || 1);
+            }
+            updateData.questions = req.body.questions;
+            updateData.totalPoints = calculatedTotalPoints;
+        }
+
+        // 4. Perform the update with $set
+        const updatedQuiz = await ClubQuizModel.findOneAndUpdate(
+            { _id: id, schoolId: schoolId },
+            { $set: updateData }, // Mongoose only updates the keys in updateData
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedQuiz) {
+            return res.status(404).json({ ok: false, message: "Quiz not found or unauthorized." });
+        }
+
+        res.status(200).json({ ok: true, message: "Update successful", data: updatedQuiz });
 
     } catch (error) {
         res.status(500).json({ ok: false, message: error.message });
