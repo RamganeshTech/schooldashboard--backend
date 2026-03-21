@@ -1,5 +1,5 @@
-import HomeWorkSubmissionModel from "../../../Models/New_Model/HomeWork_model/HomeWorkSubmission.model";
-import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model";
+import HomeWorkSubmissionModel from "../../../Models/New_Model/HomeWork_model/HomeWorkSubmission.model.js";
+import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model.js";
 
 export const submitHomeworkStatus = async (req, res) => {
     try {

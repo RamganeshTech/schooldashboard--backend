@@ -41,6 +41,8 @@ import subscriptionRoutes from './Routes/New_Routes/subscription_routes/subscrip
 import timeTableRoutes from './Routes/New_Routes/TimeTable_routes/timeTable.routes.js';
 import HomeWorkRoutes from './Routes/New_Routes/HomeWork_routes/homework.routes.js';
 import HomeWorkSubmissionRoutes from './Routes/New_Routes/HomeWork_routes/homeWorkSubmission.route.js';
+import clubQuizRoutes from './Routes/New_Routes/club_routes/clubQuiz.routes.js';
+import clubQuizAttemptRoutes from './Routes/New_Routes/club_routes/clubQuizAttempt.routes.js';
 
 
 dotenv.config({ path: '.env.production' });
@@ -80,6 +82,8 @@ app.use('/api/homework/submission', HomeWorkSubmissionRoutes)
 app.use('/api/expense', expenseRoutes)
 app.use('/api/announcement', annoucementRoutes)
 app.use('/api/club', clubRoutes);
+app.use('/api/club/quiz/attempt', clubQuizAttemptRoutes)
+app.use('/api/club/quiz', clubQuizRoutes)
 
 // not mentioned in the docuemntation
 app.use('/api/financeledger', financeRoutes)
