@@ -43,6 +43,7 @@ import HomeWorkRoutes from './Routes/New_Routes/HomeWork_routes/homework.routes.
 import HomeWorkSubmissionRoutes from './Routes/New_Routes/HomeWork_routes/homeWorkSubmission.route.js';
 import clubQuizRoutes from './Routes/New_Routes/club_routes/clubQuiz.routes.js';
 import clubQuizAttemptRoutes from './Routes/New_Routes/club_routes/clubQuizAttempt.routes.js';
+import PendingTaskRoutes from './Routes/New_Routes/pendingTask_routes/pendingTask.routes.js';
 
 
 dotenv.config({ path: '.env.production' });
@@ -77,6 +78,7 @@ app.use('/api/fee/receipt', feeReceiptRoutes)
 app.use('/api/timetable', timeTableRoutes)
 app.use('/api/homework', HomeWorkRoutes)
 app.use('/api/homework/submission', HomeWorkSubmissionRoutes)
+app.use('/api/pending', PendingTaskRoutes)
 
 
 app.use('/api/expense', expenseRoutes)

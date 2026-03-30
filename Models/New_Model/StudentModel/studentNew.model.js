@@ -62,8 +62,8 @@ const StudentNewSchema = mongoose.Schema({
         // ... add any other specific mandatory fields here
     },
 
-    // === NON-MANDATORY DETAILS (Health, Talents) ===
-    nonMandatory: {
+    // === NON-MANDATORY DETAILS (Health, Talents) (UDISE FORM) ===
+    nonMandatory: {     
         facilitiesProvided: { type: String, default: null },
         facilitiesForCWSN: { type: String, default: null },
         screenedForSLD: { type: String, default: null },

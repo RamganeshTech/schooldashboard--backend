@@ -165,7 +165,7 @@ export const createUser = async (req, res) => {
       // finalRole = "parent"; // Auto-assign role
       // studentIds = linkedStudents.map(student => student._id);
       parentData = { studentId: linkedStudents.map(s => s._id) };
-      console.log(`[Auto-Link] Found ${studentIds.length} students for new user.`);
+      // console.log(`[Auto-Link] Found ${studentIds.length} students for new user.`);
     }
 
     // If no role passed and no students found, you might want a default (like 'guest')
@@ -339,7 +339,7 @@ export const isAuthenticated = async (req, res) => {
       isPlatformAdmin: isExist?.isPlatformAdmin || false,
       studentId: user?.studentId || [],
       assignments: user?.assignments || [],
-      schoolId: user?.schoolId || null,
+      // schoolId: user?.schoolId || null,
     };
 
 
