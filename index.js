@@ -44,6 +44,7 @@ import HomeWorkSubmissionRoutes from './Routes/New_Routes/HomeWork_routes/homeWo
 import clubQuizRoutes from './Routes/New_Routes/club_routes/clubQuiz.routes.js';
 import clubQuizAttemptRoutes from './Routes/New_Routes/club_routes/clubQuizAttempt.routes.js';
 import PendingTaskRoutes from './Routes/New_Routes/pendingTask_routes/pendingTask.routes.js';
+import CalendarRoutes from './Routes/New_Routes/academicCalendar_routes/academicCaledar.routes.js';
 
 
 dotenv.config({ path: '.env.production' });
@@ -79,7 +80,7 @@ app.use('/api/timetable', timeTableRoutes)
 app.use('/api/homework', HomeWorkRoutes)
 app.use('/api/homework/submission', HomeWorkSubmissionRoutes)
 app.use('/api/pending', PendingTaskRoutes)
-
+app.use('/api/calendar', CalendarRoutes);
 
 app.use('/api/expense', expenseRoutes)
 app.use('/api/announcement', annoucementRoutes)

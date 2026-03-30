@@ -7,8 +7,8 @@ import StudentNewModel from "../../../Models/New_Model/StudentModel/studentNew.m
 import UserModel from "../../../Models/New_Model/UserModel/userModel.model.js";
 
 export const getPendingTasksForParent = async (req, res) => {
-  try {
-        const { schoolId } = req.user; 
+    try {
+        const { schoolId } = req.user;
         const { role, userId } = req.query;
 
         // if (role !== "parent") {
@@ -20,6 +20,10 @@ export const getPendingTasksForParent = async (req, res) => {
         //     });
         // }
 
+
+        if (!userId) {
+            return res.status(400).json({ message: "userId is required", ok: false })
+        }
 
         console.log("role", role)
 
