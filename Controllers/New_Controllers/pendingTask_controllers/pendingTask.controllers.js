@@ -11,14 +11,17 @@ export const getPendingTasksForParent = async (req, res) => {
         const { schoolId } = req.user; 
         const { role, userId } = req.query;
 
-        if (role !== "parent") {
-            return res.status(200).json({
-                ok: true,
-                totalPending: 0,
-                data: [],
-                message: "Pending tasks are currently only for parent roles."
-            });
-        }
+        // if (role !== "parent") {
+        //     return res.status(200).json({
+        //         ok: true,
+        //         totalPending: 0,
+        //         data: [],
+        //         message: "Pending tasks are currently only for parent roles."
+        //     });
+        // }
+
+
+        console.log("role", role)
 
         // 1. Get associated student IDs
         const parentUser = await UserModel.findById(userId).select("studentId");
