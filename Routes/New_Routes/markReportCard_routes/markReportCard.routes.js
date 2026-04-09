@@ -47,7 +47,7 @@ markReportRoutes.delete('/delete/:reportId',
     deleteMarkReport
 );
 
-markReportRoutes.delete('/get/:reportId',
+markReportRoutes.get('/get/:reportId',
     multiRoleAuth("correspondent", "administrator", "principal", "teacher", "parent", "viceprincipal"),
     // featureGuard("marks"),
     deleteMarkReport
