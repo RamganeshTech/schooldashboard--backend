@@ -22,7 +22,7 @@ const markReportSchema = new Schema({
     academicYear: { type: String, required: true }, // e.g., "2025-2026"
 
     // === HIERARCHY ===
-    classId: { type: Schema.Types.ObjectId, ref: "ClassModel", required: true },
+    classId: { type: Schema.Types.ObjectId, ref: "ClassModel", default:null },
     sectionId: { type: Schema.Types.ObjectId, ref: "SectionModel", default: null },
 
     // === THE TARGETS ===
