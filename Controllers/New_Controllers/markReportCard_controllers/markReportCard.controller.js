@@ -1,8 +1,8 @@
 // import MarkReportModel from "../../models/MarkReportModel.js"; // Adjust paths as needed
 // import SchoolModel from "../../models/SchoolModel.js";
 
-import MarkReportModel from "../../../Models/New_Model/markReportCard_model/markReportCard.model";
-import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model";
+import MarkReportModel from "../../../Models/New_Model/markReportCard_model/markReportCard.model.js";
+import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model.js";
 
 // ==========================================
 // 1. CREATE MARK REPORT
