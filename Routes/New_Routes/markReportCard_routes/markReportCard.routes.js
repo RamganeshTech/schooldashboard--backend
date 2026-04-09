@@ -4,7 +4,8 @@ import express from 'express';
 import {  createMarkReport,
  getAllMarkReports,
  updateMarkReport,
- deleteMarkReport } from '../../../Controllers/New_Controllers/markReportCard_controllers/markReportCard.controller.js';
+ deleteMarkReport, 
+ getMarkReportById} from '../../../Controllers/New_Controllers/markReportCard_controllers/markReportCard.controller.js';
 import { multiRoleAuth } from '../../../Middleware/multiRoleRequest.js';
 
 const markReportRoutes = express.Router();
@@ -50,7 +51,7 @@ markReportRoutes.delete('/delete/:reportId',
 markReportRoutes.get('/get/:reportId',
     multiRoleAuth("correspondent", "administrator", "principal", "teacher", "parent", "viceprincipal"),
     // featureGuard("marks"),
-    deleteMarkReport
+    getMarkReportById
 );
 
 
