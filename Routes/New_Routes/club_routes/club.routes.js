@@ -1,6 +1,6 @@
 import express from 'express';
 import { addStudentToClub, createClub, deleteClub, getAllClubs, getClubById, removeStudentFromClub, toggleClassStudentsToClub, updateClubText, updateClubThumbnail } from '../../../Controllers/New_Controllers/club_controllers/club.controller.js';
-import { createClubVideo, deleteClubVideo, getAllClubVideos, getClubVideoById, updateClubVideoDetails, updateClubVideoFile } from '../../../Controllers/New_Controllers/club_controllers/clubVideo.controller.js';
+import { createClubVideo, deleteClubVideo, getAllClubVideos, getClubVideoById, updateClubVideoDetails, updateClubVideoFile, uploadClubPDF } from '../../../Controllers/New_Controllers/club_controllers/clubVideo.controller.js';
 import { upload } from '../../../Utils/s4UploadsNew.js';
 import { multiRoleAuth } from '../../../Middleware/multiRoleRequest.js';
 import { featureGuard } from '../../../Middleware/featureGuard.js';
@@ -133,6 +133,15 @@ clubRoutes.put('/video/updatedetails/:id',
 
     featureGuard("club"),
     updateClubVideoDetails);
+
+clubRoutes.put('/video/upload-pdf/:id',
+    multiRoleAuth("correspondent", "administrator", "teacher"),
+    upload.array("files"),
+    featureGuard("club"),
+    uploadClubPDF);
+
+
+
 
 // Update VIDEO FILE only (Multipart form-data: 'video' file) - Re-uploads the file
 clubRoutes.put('/video/updatefile/:id',

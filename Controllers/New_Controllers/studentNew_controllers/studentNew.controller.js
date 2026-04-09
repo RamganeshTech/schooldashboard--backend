@@ -19,7 +19,7 @@ export const createStudentProfile = async (req, res) => {
             gender,
             dob,
             whatsappNumber,
-            newOld, 
+            newOld,
             //   mandatory, 
             //   nonMandatory 
         } = req.body;
@@ -38,7 +38,11 @@ export const createStudentProfile = async (req, res) => {
                 nonMandatoryData = JSON.parse(req.body.nonMandatory);
             }
         } catch (parseError) {
-            return res.status(400).json({ ok: false, message: "Invalid JSON format for mandatory/nonMandatory fields" });
+            return res.status(400).json({
+                ok: false,
+                message: "Invalid JSON format for mandatory/nonMandatory fields",
+                error: parseError.message
+            });
         }
 
         // 1. Basic Validation
@@ -198,7 +202,8 @@ export const updateStudent = async (req, res) => {
         } catch (parseError) {
             return res.status(400).json({
                 ok: false,
-                message: "Invalid JSON format for mandatory/nonMandatory fields"
+                message: "Invalid JSON format for mandatory/nonMandatory fields",
+                error: parseError.message
             });
         }
 
@@ -452,7 +457,7 @@ export const assignStudentToParent = async (req, res) => {
             });
         }
 
-         await createAuditLog(req, {
+        await createAuditLog(req, {
             action: "edit",
             module: "user",
             targetId: parentId,
@@ -503,7 +508,7 @@ export const removeStudentFromParent = async (req, res) => {
             });
         }
 
-         await createAuditLog(req, {
+        await createAuditLog(req, {
             action: "edit",
             module: "user",
             targetId: parentId,

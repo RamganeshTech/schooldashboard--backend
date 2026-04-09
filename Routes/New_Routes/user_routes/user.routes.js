@@ -1,5 +1,5 @@
 import express from 'express'
-import { assignRolesToUser, createUser, deleteUser, isAuthenticated, loginUser, logoutUser, updateUser } from '../../../Controllers/New_Controllers/user_contorllers/user.controllers.js';
+import { assignRolesToUser, createUser, deleteUser, isAuthenticated, loginUser, logoutUser, updateUser , getParentStudents} from '../../../Controllers/New_Controllers/user_contorllers/user.controllers.js';
 import { multiRoleAuth } from '../../../Middleware/multiRoleRequest.js';
 import { getSingleUser, getUsersBySchool } from '../../../Controllers/New_Controllers/user_contorllers/userUtil.controller.js';
 
@@ -42,6 +42,14 @@ userRoutes.put(
     "/assignrole/:userId",
     multiRoleAuth("correspondent", "administrator"),
     assignRolesToUser
+);
+
+
+
+userRoutes.get(
+    "/associated-students/get/:userId",
+    multiRoleAuth("correspondent", "administrator","parent"),
+    getParentStudents
 );
 
 

@@ -567,3 +567,59 @@ export const assignRolesToUser = async (req, res) => {
     return res.status(500).json({ ok: false, message: "Server error", error: err.message });
   }
 };
+
+
+export const getParentStudents = async (req, res) => {
+    try {
+        // Assuming userId comes from the route parameters (e.g., /parent/:userId/students)
+        // Or if it's from auth, you could use req.user._id
+        const { userId } = req.params;
+
+        if (!userId) {
+            return res.status(400).json({ 
+                ok: false, 
+                message: "Parent ID is required." 
+            });
+        }
+
+        // Find the parent user and populate the studentId array
+        const parentRecord = await UserModel.findById(userId).populate({
+            path: "studentId",
+            model: "StudentNewModel", // Explicitly telling Mongoose which model to use
+            // select: "studentName srId studentImage schoolId", // Optional: Un-comment this if you only want specific fields
+        });
+
+        if (!parentRecord) {
+            return res.status(404).json({ 
+                ok: false, 
+                message: "Parent profile not found." 
+            });
+        }
+
+        // Check if the parent actually has any associated students
+        if (!parentRecord.studentId || parentRecord.studentId.length === 0) {
+            return res.status(200).json({
+                ok: true,
+                message: "No students associated with this parent.",
+                data: []
+            });
+        }
+
+        // Because of .populate(), parentRecord.studentId is now an array of full student objects, not just IDs
+        const studentsData = parentRecord.studentId;
+
+        return res.status(200).json({
+            ok: true,
+            message: "Student profiles retrieved successfully.",
+            data: studentsData
+        });
+
+    } catch (error) {
+        console.error("Error fetching parent's students:", error);
+        return res.status(500).json({ 
+            ok: false, 
+            message: "Server error. Please try again later.", 
+            error: error.message 
+        });
+    }
+};

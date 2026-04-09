@@ -4,7 +4,7 @@
 import { ClubMainModel, ClubVideoModel } from "../../../Models/New_Model/club_model/club.model.js";
 import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model.js";
 import { createAuditLog } from "../audit_controllers/audit.controllers.js";
-import { formatUploadData } from "./club.controller.js";
+import { formatUploadData, processFilesClub } from "./club.controller.js";
 
 // ==========================================
 // 1. Create/Upload Video
@@ -69,7 +69,7 @@ export const createClubVideo = async (req, res) => {
 
     } catch (error) {
         console.error("Upload Video Error:", error);
-        res.status(500).json({ ok: false, message: "Server error while uploading videos" });
+        res.status(500).json({ ok: false, message: "Server error while uploading videos", error: error.message });
     }
 };
 
@@ -120,9 +120,72 @@ export const updateClubVideoFile = async (req, res) => {
 
     } catch (error) {
         console.error("Update Video File Error:", error);
-        res.status(500).json({ ok: false, message: "Server error while updating video file" });
+        res.status(500).json({ ok: false, message: "Server error while updating video file", error: error.message });
     }
 };
+
+export const uploadClubPDF = async (req, res) => {
+    try {
+
+        const { id } = req.params;
+        const files = req.files;
+
+        // // 1. Validation: Ensure a file was actually sent
+        // if (!file) {
+        //     return res.status(400).json({ ok: false, message: "No new video file provided for update." });
+        // }
+
+        // // 2. Validation: Ensure the record exists before processing upload
+        // const existingVideo = await ClubVideoModel.findById(id);
+        // if (!existingVideo) {
+        //     return res.status(404).json({ ok: false, message: "Video record not found." });
+        // }
+
+        // 3. Process Upload (Upload to S3)
+        // This uses your helper to get { url, key, type, ... }
+
+
+        // const newVideoData = await formatUploadData(file);
+
+
+        // 1. Validation
+        if (!files || files.length === 0) {
+            return res.status(400).json({ ok: false, message: "No PDF files provided for uploading." });
+        }
+
+        const uploadedPdfs = await processFilesClub(files);
+
+
+        // 4. Update Database
+        // We strictly update ONLY the 'video' field
+        const updatedVideo = await ClubVideoModel.findByIdAndUpdate(
+            id,
+            { $push: { pdfs: { $each: uploadedPdfs } } },
+            { new: true } // Returns the updated document
+        );
+
+        // Optional: You could delete the OLD video from S3 here using existingVideo.video.key
+        // to save storage costs, but that depends on your preference.
+
+        await createAuditLog(req, {
+            action: "edit",
+            module: "club",
+            targetId: updatedVideo._id,
+            description: `new pdf got updated in club (${updatedVideo._id})`,
+            status: "success"
+        });
+
+        res.status(200).json({
+            ok: true, message: "Pdf file updated successfully",
+            data: updatedVideo
+        });
+
+    }
+    catch (error) {
+        console.error("Upload club pdf Error:", error);
+        res.status(500).json({ ok: false, message: "error while uploading the pdf", error: error.message });
+    }
+}
 
 // ==========================================
 // 2. Get All Videos (Filter by Club)
@@ -174,7 +237,7 @@ export const getAllClubVideos = async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching videos:", error);
-        res.status(500).json({ ok: false, message: "Error fetching videos" });
+        res.status(500).json({ ok: false, message: "Error fetching videos", error: error.message });
     }
 };
 // ==========================================
@@ -193,7 +256,7 @@ export const getClubVideoById = async (req, res) => {
         res.status(200).json({ ok: true, data: video });
 
     } catch (error) {
-        res.status(500).json({ ok: false, message: "Error fetching video details" });
+        res.status(500).json({ ok: false, message: "Error fetching video details", error: error.message });
     }
 };
 
@@ -250,7 +313,7 @@ export const updateClubVideoDetails = async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ ok: false, message: "Error updating video details" });
+        res.status(500).json({ ok: false, message: "Error updating video details", error: error.message });
     }
 };
 
@@ -288,6 +351,6 @@ export const deleteClubVideo = async (req, res) => {
         res.status(200).json({ ok: true, message: "Video deleted successfully" });
 
     } catch (error) {
-        res.status(500).json({ ok: false, message: "Error deleting video" });
+        res.status(500).json({ ok: false, message: "Error deleting video", error: error.message });
     }
 };

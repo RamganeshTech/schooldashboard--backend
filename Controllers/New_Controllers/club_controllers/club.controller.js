@@ -22,6 +22,25 @@ export const formatUploadData = async (file) => {
 
 
 
+
+export const processFilesClub = async (filesArray) => {
+    if (!filesArray || filesArray.length === 0) return [];
+    return await Promise.all(
+        filesArray.map(async (file) => {
+            const uploadData = await uploadFileToS3New(file);
+            const type = file.mimetype.startsWith("image") ? "image" : "pdf";
+            return {
+                url: uploadData.url,
+                key: uploadData.key,
+                type: type,
+                originalName: file.originalname,
+                uploadedAt: new Date()
+            };
+        })
+    );
+};
+
+
 // ========
 // ==========================================
 // 1. Create Club (With Optional Thumbnail)
@@ -81,7 +100,7 @@ export const createClub = async (req, res) => {
 // ==========================================
 export const getAllClubs = async (req, res) => {
     try {
-        const { schoolId , classId} = req.query;
+        const { schoolId, classId } = req.query;
 
         // 1. Pagination Setup
         const page = parseInt(req.query.page) || 1;
@@ -132,7 +151,7 @@ export const getAllClubs = async (req, res) => {
 export const getClubById = async (req, res) => {
     try {
         const { id } = req.params;
-        const club = await ClubMainModel.findById(id).populate("studentId classId" )
+        const club = await ClubMainModel.findById(id).populate("studentId classId")
 
         if (!club) {
             return res.status(404).json({ ok: false, message: "Club not found" });
@@ -187,7 +206,7 @@ export const updateClubText = async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ ok: false, message: "Error updating club details", error:error.message });
+        res.status(500).json({ ok: false, message: "Error updating club details", error: error.message });
     }
 };
 
@@ -283,7 +302,7 @@ export const deleteClub = async (req, res) => {
         res.status(200).json({ ok: true, message: "Club and associated videos deleted successfully" });
 
     } catch (error) {
-        res.status(500).json({ ok: false, message: "Error deleting club" , error:error.message});
+        res.status(500).json({ ok: false, message: "Error deleting club", error: error.message });
     }
 };
 
@@ -417,10 +436,10 @@ export const toggleClassStudentsToClub = async (req, res) => {
         }
 
         const classStudentIds = studentsInClass.map(s => s._id.toString());
-        
+
         // 2. INTERNAL TOGGLE LOGIC:
         // We check if any student from this class is currently in the club's studentId array.
-        const isAlreadyAdded = targetClub.studentId.some(id => 
+        const isAlreadyAdded = targetClub.studentId.some(id =>
             classStudentIds.includes(id.toString())
         );
 
@@ -429,8 +448,8 @@ export const toggleClassStudentsToClub = async (req, res) => {
 
         // 3. Define MongoDB operators
         // For Students: update their 'clubs' array
-        const studentUpdate = type === 'add' 
-            ? { $addToSet: { clubs: clubId } } 
+        const studentUpdate = type === 'add'
+            ? { $addToSet: { clubs: clubId } }
             : { $pull: { clubs: clubId } };
 
         // For Club: update the 'studentId' array

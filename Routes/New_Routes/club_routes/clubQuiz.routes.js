@@ -1,7 +1,7 @@
 import express from 'express';
 import { multiRoleAuth } from '../../../Middleware/multiRoleRequest.js';
 import { featureGuard } from '../../../Middleware/featureGuard.js';
-import { createClubQuiz, deleteClubQuiz, getAllClubQuizzes, getSingleClubQuiz, updateClubQuiz } from '../../../Controllers/New_Controllers/club_controllers/clubQuiz.controller.js';
+import { createClubQuiz, createQuizWithAI, deleteClubQuiz, getAllClubQuizzes, getSingleClubQuiz, updateClubQuiz } from '../../../Controllers/New_Controllers/club_controllers/clubQuiz.controller.js';
 
 const clubQuizRoutes = express.Router();
 
@@ -33,6 +33,15 @@ clubQuizRoutes.delete('/delete/:id',
     multiRoleAuth("correspondent", "administrator", "teacher"),
     featureGuard("club"),
     deleteClubQuiz);
+
+
+
+clubQuizRoutes.post('/create/ai',
+    multiRoleAuth("correspondent", "administrator", "teacher"),
+    featureGuard("club"),
+    createQuizWithAI);
+
+    
 
 
 export default clubQuizRoutes;

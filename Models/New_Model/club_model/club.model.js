@@ -57,6 +57,11 @@ const clubVideoSchema = new Schema({
         default: null,
     },
 
+    pdfs: {
+        type: [uploadSchema],
+        default:[]
+    },
+
     // Categorization (As per requirements)
     topic: {
         type: String,

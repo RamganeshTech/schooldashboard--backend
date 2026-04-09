@@ -45,6 +45,7 @@ import clubQuizRoutes from './Routes/New_Routes/club_routes/clubQuiz.routes.js';
 import clubQuizAttemptRoutes from './Routes/New_Routes/club_routes/clubQuizAttempt.routes.js';
 import PendingTaskRoutes from './Routes/New_Routes/pendingTask_routes/pendingTask.routes.js';
 import CalendarRoutes from './Routes/New_Routes/academicCalendar_routes/academicCaledar.routes.js';
+import markReportRoutes from './Routes/New_Routes/markReportCard_routes/markReportCard.routes.js';
 
 
 dotenv.config({ path: '.env.production' });
@@ -87,6 +88,8 @@ app.use('/api/announcement', annoucementRoutes)
 app.use('/api/club', clubRoutes);
 app.use('/api/club/quiz/attempt', clubQuizAttemptRoutes)
 app.use('/api/club/quiz', clubQuizRoutes)
+
+app.use('/api/markreport',markReportRoutes)
 
 // not mentioned in the docuemntation
 app.use('/api/financeledger', financeRoutes)

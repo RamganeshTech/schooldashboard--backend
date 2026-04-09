@@ -130,11 +130,11 @@ export const collectFeeAndManageRecord = async (req, res) => {
             throw new Error("Action Denied: This Student Record is INACTIVE. Please activate it first to collect fees.");
         }
 
-        let isNewRecord = false;
+        // let isNewRecord = false; // not used so commented
 
         // If not found, we prepare to create it using Master Fees
         if (!studentRecord) {
-            isNewRecord = true;
+            // _isNewRecord = true;
 
             // Get Class & Section Names
             const cDoc = await ClassModel.findById(classId).session(session);
@@ -315,7 +315,7 @@ export const collectFeeAndManageRecord = async (req, res) => {
         let remainingToPay = payingAmount;
 
         // Heads Priority for FIFO
-        const priority = ['admissionFee', 'busFirstTermAmt', 'firstTermAmt', 'busSecondTermAmt', 'secondTermAmt'];
+        // const priority = ['admissionFee', 'busFirstTermAmt', 'firstTermAmt', 'busSecondTermAmt', 'secondTermAmt'];
 
 
         // NEWLY DDED LOGIC 

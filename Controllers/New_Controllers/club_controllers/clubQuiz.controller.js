@@ -1,5 +1,7 @@
 import ClubQuizModel from "../../../Models/New_Model/club_model/ClubQuiz.model.js";
 import SchoolModel from "../../../Models/New_Model/SchoolModel/shoolModel.model.js";
+import genAI from "../../../Config/geminiConfig.js";
+import { ClubVideoModel } from "../../../Models/New_Model/club_model/club.model.js";
 
 export const createClubQuiz = async (req, res) => {
     try {
@@ -83,8 +85,8 @@ export const updateClubQuiz = async (req, res) => {
         const { id } = req.params;
         const schoolId = req.user.schoolId;
 
-        if(!id){
-                return res.status(400).json({ ok: false, message: "id is required." });
+        if (!id) {
+            return res.status(400).json({ ok: false, message: "id is required." });
         }
 
         // 1. Create an empty object for the update
@@ -93,7 +95,7 @@ export const updateClubQuiz = async (req, res) => {
         // 2. Only add fields to updateData if they exist in req.body
         // Use a whitelist approach for security
         const allowedFields = [
-            'clubId', 'clubVideoId', 'classId', 'sectionId', 
+            'clubId', 'clubVideoId', 'classId', 'sectionId',
             'title', 'description', 'academicYear', 'isActive'
         ];
 
@@ -200,6 +202,134 @@ export const deleteClubQuiz = async (req, res) => {
 
         res.status(200).json({ ok: true, message: "Quiz deleted successfully" });
     } catch (error) {
+        res.status(500).json({ ok: false, message: error.message });
+    }
+};
+
+
+
+//  AI QUIZ POWERED
+
+
+export const createQuizWithAI = async (req, res) => {
+    try {
+        let {
+            clubId,
+            clubVideoId,
+            classId,
+            sectionId,
+            academicYear,
+            numberOfQuestions = 10
+        } = req.body;
+
+        const schoolId = req.body.schoolId || req.user.schoolId;
+
+
+        if(!schoolId)
+
+        // 1. Academic Year Fallback
+        if (!academicYear) {
+            const school = await SchoolModel.findById(schoolId).select("currentAcademicYear");
+
+            academicYear = school?.currentAcademicYear;
+
+            if (!academicYear) {
+                return res.status(400).json({ ok: false, message: "Academic year not provided and not set in school settings." });
+            }
+        }
+
+        // 2. Fetch PDF from Record
+        const videoRecord = await ClubVideoModel.findById(clubVideoId);
+        if (!videoRecord || !videoRecord.pdfs?.length) {
+            return res.status(404).json({ ok: false, message: "No PDF found for analysis." });
+        }
+
+        const pdfUrl = videoRecord.pdfs[0].url;
+        const pdfResponse = await fetch(pdfUrl);
+        const pdfBuffer = await pdfResponse.arrayBuffer();
+        const base64Pdf = Buffer.from(pdfBuffer).toString("base64");
+
+        // 3. New SDK Call Structure using 'ai'
+        const response = await genAI.models.generateContent({
+            model: "gemini-2.0-flash",
+            contents: [
+                {
+                    role: "user",
+                    parts: [
+                        { text: `Analyze this PDF. Generate a quiz title, a 1 sentence small description, and ${numberOfQuestions} MCQs based on the content. Each question must carry exactly 1 point.` },
+                        { inlineData: { mimeType: "application/pdf", data: base64Pdf } }
+                    ]
+                }
+            ],
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: "object",
+                    properties: {
+                        title: { type: "string" },
+                        description: { type: "string" },
+                        questions: {
+                            type: "array",
+                            items: {
+                                type: "object",
+                                properties: {
+                                    questionText: { type: "string" },
+                                    options: { type: "array", items: { type: "string" } },
+                                    correctOptionIndex: { type: "integer" },
+                                    points: {
+                                        type: "integer",
+                                        enum: [1] // THIS FORCES THE AI TO ONLY USE THE VALUE 1
+                                    }
+                                },
+                                required: ["questionText", "options", "correctOptionIndex", "points"]
+                            }
+                        }
+                    },
+                    required: ["title", "description", "questions"]
+                }
+            }
+        });
+
+        console.log("response", response)
+
+        // 4. Parse the AI Response (Note: response.text is a property now)
+        const aiGeneratedData = JSON.parse(response.text);
+
+        console.log("aiGeneratedData parsed", aiGeneratedData)
+
+
+        // 5. Calculate Points and Save
+        const totalPoints = aiGeneratedData.questions.reduce((sum, q) => sum + (q.points || 1), 0);
+
+        console.log("total points", totalPoints)
+
+        // Since each question is guaranteed to be 1 point via the Schema Enum:
+        // const totalPoints = aiGeneratedData.questions.length;
+
+        const newQuiz = new ClubQuizModel({
+            schoolId,
+            clubId,
+            clubVideoId,
+            classId,
+            sectionId,
+            academicYear,
+            title: aiGeneratedData.title,
+            description: aiGeneratedData.description,
+            questions: aiGeneratedData.questions,
+            totalPoints,
+            isActive: true
+        });
+
+        await newQuiz.save();
+
+        res.status(201).json({
+            ok: true,
+            message: "AI Quiz generated via Gemini 2.0 successfully",
+            data: newQuiz
+        });
+
+    } catch (error) {
+        console.error("Gemini 2.0 AI Error:", error);
         res.status(500).json({ ok: false, message: error.message });
     }
 };
