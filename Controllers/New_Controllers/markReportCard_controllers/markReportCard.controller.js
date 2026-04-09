@@ -23,8 +23,8 @@ export const createMarkReport = async (req, res) => {
         const recordedBy = req.user?._id; // Assuming you have authentication middleware
 
         // Basic Validation
-        if (!schoolId || !classId || !studentId) {
-            return res.status(400).json({ ok: false, message: "schoolId, classId, and studentId are required." });
+        if (!schoolId || !studentId) {
+            return res.status(400).json({ ok: false, message: "schoolId, and studentId are required." });
         }
 
         // 1. Academic Year Fallback
@@ -122,6 +122,10 @@ export const updateMarkReport = async (req, res) => {
     try {
         const { reportId } = req.params;
         const {
+            classId,
+            sectionId,
+            studentId,
+            academicYear,
             subjects,
             remarks,
             isAbsent
@@ -133,6 +137,14 @@ export const updateMarkReport = async (req, res) => {
 
         // Build the update object dynamically
         const updateData = {};
+
+        // Hierarchy and Tenancy updates (only if provided)
+        if (classId !== undefined) updateData.classId = classId;
+        if (sectionId !== undefined) updateData.sectionId = sectionId;
+        if (studentId !== undefined) updateData.studentId = studentId;
+        if (academicYear !== undefined) updateData.academicYear = academicYear;
+
+        
         if (subjects && Array.isArray(subjects)) updateData.subjects = subjects; // This replaces the old array with the new one
         if (remarks !== undefined) updateData.remarks = remarks;
         if (isAbsent !== undefined) updateData.isAbsent = isAbsent;
