@@ -1,11 +1,11 @@
 import express from 'express';
 
 // Adjust these imports based on your actual middleware locations
-import { multiRoleAuth } from '../middleware/auth.middleware.js'; 
 import {  createMarkReport,
  getAllMarkReports,
  updateMarkReport,
  deleteMarkReport } from '../../../Controllers/New_Controllers/markReportCard_controllers/markReportCard.controller.js';
+import { multiRoleAuth } from '../../../Middleware/multiRoleRequest.js';
 
 const markReportRoutes = express.Router();
 
