@@ -24,7 +24,7 @@ studentRoutes.post(
 // UPDATE
 studentRoutes.put(
   "/update/:id",
-  multiRoleAuth("correspondent", "administrator", "accountant",),
+  multiRoleAuth("correspondent", "administrator", "accountant", "parent"),
     featureGuard("studentRecord"),
 
   upload.single("file"), // Image

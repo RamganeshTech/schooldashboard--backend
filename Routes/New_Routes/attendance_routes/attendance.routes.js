@@ -19,7 +19,7 @@ const attendanceRoutes = express.Router();
 // Used by Teachers daily
 attendanceRoutes.get(
   "/sheet",
-  multiRoleAuth("administrator", "correspondent", "principal", "teacher"),
+  multiRoleAuth("administrator", "correspondent", "principal", "teacher", "parent"),
   featureGuard("attendance"),
   getAttendanceSheet
 );
